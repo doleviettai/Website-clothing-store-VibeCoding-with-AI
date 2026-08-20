@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: clothing-store-backend
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/clothing_store?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
+    username: root
+    password: taido231105
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # validate: kiểm tra schema khớp entity — Flyway chịu trách nhiệm tạo bảng
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    show-sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+# ===================== JWT =====================
+jwt:
+  # Secret key — PHẢI đổi sang chuỗi ngẫu nhiên dài khi deploy production
+  secret: "QF/hXdGbeSViDt3Zkmem2iandRdI8MzqGqw2V9xMx2g="
+  # Access token hết hạn sau 15 phút (milliseconds)
+  access-token-expiry: 900000
+  # Refresh token hết hạn sau 7 ngày (milliseconds)
+  refresh-token-expiry: 604800000
+
+# ===================== CORS =====================
+cors:
+  allowed-origins: "http://localhost:5173"
+
+server:
+  port: 8080
