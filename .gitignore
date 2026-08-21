@@ -1,0 +1,36 @@
+# ==========================================
+# Secret & Environment Files (KHÔNG PUSH GIT)
+# ==========================================
+.env
+.env.local
+.env.*.local
+application-secret.yaml
+application-secret.properties
+
+# ==========================================
+# Backend (Spring Boot & Maven)
+# ==========================================
+backend/backend/target/
+backend/backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+
+# ==========================================
+# Frontend (Vue.js & Node)
+# ==========================================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.timestamp-*-*.mjs
+
+# ==========================================
+# IDE & Editors
+# ==========================================
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db

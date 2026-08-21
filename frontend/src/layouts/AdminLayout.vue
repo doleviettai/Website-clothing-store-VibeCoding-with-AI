@@ -1,17 +1,26 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
+// Mặc định trên màn hình rộng là mở, màn hình nhỏ sẽ tự động xử lý responsive
 const isSidebarOpen = ref(true)
 
 const handleLogout = async () => {
   await authStore.logoutAction()
   router.push('/login')
 }
+
+// Tự động đóng sidebar trên mobile mỗi khi chuyển route
+watch(() => route.path, () => {
+  if (window.innerWidth < 992) {
+    isSidebarOpen.value = false
+  }
+})
 </script>
 
 <template>
@@ -19,7 +28,7 @@ const handleLogout = async () => {
     <!-- Header Admin Bar (Style DeskApp) -->
     <header class="admin-header">
       <div class="header-left">
-        <button class="menu-toggle" @click="isSidebarOpen = !isSidebarOpen" title="Ẩn/Hiện Sidebar">
+        <button class="menu-toggle" @click="isSidebarOpen = !isSidebarOpen" title="Ẩn/Hiện Menu">
           <i class="fa fa-bars"></i>
         </button>
         <div class="header-logo">
@@ -32,7 +41,7 @@ const handleLogout = async () => {
 
       <div class="header-right">
         <RouterLink to="/" class="btn-client-link" target="_blank" title="Xem cửa hàng Client">
-          <i class="fa fa-globe"></i> <span>Xem Cửa Hàng</span>
+          <i class="fa fa-globe"></i> <span class="d-none d-sm-inline">Xem Cửa Hàng</span>
         </RouterLink>
 
         <!-- User profile dropdown -->
@@ -40,7 +49,7 @@ const handleLogout = async () => {
           <div class="user-avatar">
             <i class="fa fa-user-circle-o"></i>
           </div>
-          <div class="user-details">
+          <div class="user-details d-none d-md-flex">
             <span class="user-name">{{ authStore.user?.fullName || 'Administrator' }}</span>
             <span class="user-role">Quản trị viên</span>
           </div>
@@ -50,6 +59,13 @@ const handleLogout = async () => {
         </div>
       </div>
     </header>
+
+    <!-- Overlay mờ khi mở Sidebar trên Mobile/Tablet -->
+    <div
+      v-if="isSidebarOpen"
+      class="sidebar-overlay d-lg-none"
+      @click="isSidebarOpen = false"
+    ></div>
 
     <!-- Main Container -->
     <div class="admin-body">
@@ -152,7 +168,7 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 20px;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -201,7 +217,7 @@ const handleLogout = async () => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .btn-client-link {
@@ -228,7 +244,7 @@ const handleLogout = async () => {
   align-items: center;
   gap: 10px;
   border-left: 1px solid #e5e7eb;
-  padding-left: 16px;
+  padding-left: 12px;
 }
 
 .user-avatar i {
@@ -272,6 +288,7 @@ const handleLogout = async () => {
 .admin-body {
   display: flex;
   flex: 1;
+  position: relative;
 }
 
 .admin-sidebar {
@@ -279,8 +296,9 @@ const handleLogout = async () => {
   background: #ffffff;
   border-right: 1px solid #e6e8ec;
   padding: 20px 0;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   flex-shrink: 0;
+  z-index: 999;
 }
 
 .sidebar-collapsed .admin-sidebar {
@@ -314,7 +332,6 @@ const handleLogout = async () => {
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s;
-
 }
 
 .nav-list li a:hover {
@@ -337,11 +354,44 @@ const handleLogout = async () => {
 .admin-main {
   flex: 1;
   padding: 24px;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 .main-container {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* ─── Responsive Media Queries ───────────────────────── */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 998;
+}
+
+@media (max-width: 991.98px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 65px;
+    bottom: 0;
+    left: 0;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar-collapsed .admin-sidebar {
+    transform: translateX(-100%);
+    width: 250px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .admin-header {
+    padding: 0 12px;
+  }
+  .admin-main {
+    padding: 16px 12px;
+  }
 }
 </style>

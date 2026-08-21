@@ -1,6 +1,9 @@
 spring:
   application:
     name: clothing-store-backend
+  config:
+    import:
+      - optional:classpath:application-secret.yaml
 
   datasource:
     url: jdbc:mysql://localhost:3306/clothing_store?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
@@ -10,8 +13,8 @@ spring:
 
   jpa:
     hibernate:
-      # validate: kiểm tra schema khớp entity — Flyway chịu trách nhiệm tạo bảng
-      ddl-auto: validate
+      # update: tự động tạo/cập nhật bảng khớp entity nếu chưa có
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -22,16 +25,20 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    validate-on-migrate: true
+    validate-on-migrate: false
 
 # ===================== JWT =====================
 jwt:
-  # Secret key — PHẢI đổi sang chuỗi ngẫu nhiên dài khi deploy production
   secret: "QF/hXdGbeSViDt3Zkmem2iandRdI8MzqGqw2V9xMx2g="
-  # Access token hết hạn sau 15 phút (milliseconds)
   access-token-expiry: 900000
-  # Refresh token hết hạn sau 7 ngày (milliseconds)
   refresh-token-expiry: 604800000
+
+# ===================== CLOUDINARY =====================
+cloudinary:
+  cloud-name: "${CLOUDINARY_CLOUD_NAME:duc6hmjgx}"
+  api-key: "${CLOUDINARY_API_KEY:152112139729355}"
+  api-secret: "${CLOUDINARY_API_SECRET:WAxEHN67BBJ_T_uhkYvz2Oh2gxE}"
+  folder: "${CLOUDINARY_FOLDER:FashionShop2}"
 
 # ===================== CORS =====================
 cors:
