@@ -1,10 +1,56 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import * as bannerApi from '@/api/bannerApi'
 
 const selectedCategory = ref('all')
 const selectedBrand = ref('all')
 const selectedSort = ref('newest')
 const searchKeyword = ref('')
+
+// ─── State Banner Động CATEGORY_TOP và CATEGORY_MIDDLE ───────
+const categoryTopBanners = ref([
+  { id: 201, title: 'Ưu Đãi Đặc Biệt Chuyên Mục Thời Trang', imageUrl: '/img/hero/hero-1.jpg', targetUrl: '/products', sortOrder: 1 }
+])
+
+const categoryMiddleBanners = ref([
+  { id: 202, title: 'Khuyến Mãi Quần Áo Nam Mùa Hè', imageUrl: '/img/banner/banner-1.jpg', targetUrl: '/products', sortOrder: 1 }
+])
+
+const currentCategoryTopIndex = ref(0)
+const currentCategoryMiddleIndex = ref(0)
+let autoSlideTimer = null
+
+const fetchCategoryBanners = async () => {
+  try {
+    const resTop = await bannerApi.getClientBanners('CATEGORY_TOP')
+    if (resTop.data.data && resTop.data.data.length > 0) {
+      categoryTopBanners.value = resTop.data.data
+    }
+
+    const resMiddle = await bannerApi.getClientBanners('CATEGORY_MIDDLE')
+    if (resMiddle.data.data && resMiddle.data.data.length > 0) {
+      categoryMiddleBanners.value = resMiddle.data.data
+    }
+  } catch {
+    //
+  }
+}
+
+const startAutoSlide = () => {
+  stopAutoSlide()
+  autoSlideTimer = setInterval(() => {
+    if (categoryTopBanners.value.length > 0) {
+      currentCategoryTopIndex.value = (currentCategoryTopIndex.value + 1) % categoryTopBanners.value.length
+    }
+    if (categoryMiddleBanners.value.length > 0) {
+      currentCategoryMiddleIndex.value = (currentCategoryMiddleIndex.value + 1) % categoryMiddleBanners.value.length
+    }
+  }, 5000) // Tự động trượt Slide sau 5 giây
+}
+
+const stopAutoSlide = () => {
+  if (autoSlideTimer) clearInterval(autoSlideTimer)
+}
 
 const categories = [
   { id: 'all', name: 'Tất cả chuyên mục', count: 120 },
@@ -47,6 +93,15 @@ const filteredProducts = computed(() => {
 })
 
 const formatPrice = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)
+
+onMounted(() => {
+  fetchCategoryBanners()
+  startAutoSlide()
+})
+
+onUnmounted(() => {
+  stopAutoSlide()
+})
 </script>
 
 <template>
@@ -60,97 +115,107 @@ const formatPrice = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency',
               <h4>Cửa hàng</h4>
               <div class="breadcrumb__links">
                 <RouterLink to="/">Trang chủ</RouterLink>
-                <span>Cửa hàng</span>
+                <span>Sản phẩm</span>
               </div>
             </div>
           </div>
         </div>
       </div>
     </section>
-    <!-- Breadcrumb End -->
+
+    <!-- Banner SECTION CATEGORY_TOP Slide (Đầu Trang Cửa Hàng - Tự động trượt 5s) -->
+    <section v-if="categoryTopBanners.length > 0" class="category-top-banner my-4">
+      <div class="container">
+        <div class="position-relative overflow-hidden rounded shadow-sm">
+          <template v-for="(banner, idx) in categoryTopBanners" :key="banner.id">
+            <div
+              v-show="idx === currentCategoryTopIndex"
+              class="category-banner-item p-5 text-white fade-in-slide"
+              :style="{ backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${banner.imageUrl})` }"
+            >
+              <span class="badge bg-danger mb-2">CATEGORY_TOP • Slide {{ banner.sortOrder }}</span>
+              <h2 class="display-5 font-weight-bold text-white mb-2">{{ banner.title }}</h2>
+              <p v-if="banner.description" class="lead mb-4">{{ banner.description }}</p>
+              <RouterLink :to="banner.targetUrl || '/products'" class="btn btn-danger btn-lg font-weight-bold">
+                Khám phá ngay
+              </RouterLink>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
 
     <!-- Shop Section Begin -->
     <section class="shop spad">
       <div class="container">
         <div class="row">
-          <!-- Sidebar bộ lọc -->
+          <!-- Sidebar Bộ lọc -->
           <div class="col-lg-3">
             <div class="shop__sidebar">
-              <div class="shop__sidebar__search">
-                <form @submit.prevent>
-                  <input v-model="searchKeyword" type="text" placeholder="Tìm kiếm sản phẩm...">
-                  <button type="submit"><span class="icon_search"></span></button>
-                </form>
+              <div class="shop__sidebar__search mb-4">
+                <div class="input-group">
+                  <input
+                    v-model="searchKeyword"
+                    type="text"
+                    class="form-control"
+                    placeholder="Tìm kiếm sản phẩm tức thì (Live Search)..."
+                  />
+                </div>
               </div>
 
+              <!-- Lọc Chuyên mục -->
               <div class="shop__sidebar__accordion">
-                <div class="accordion" id="accordionExample">
-                  <!-- Danh mục -->
-                  <div class="card">
-                    <div class="card-heading">
-                      <a data-toggle="collapse" data-target="#collapseOne">Chuyên Mục</a>
-                    </div>
-                    <div id="collapseOne" class="collapse show" data-parent="#accordionExample">
-                      <div class="card-body">
-                        <div class="shop__sidebar__categories">
-                          <ul class="nice-scroll">
-                            <li v-for="cat in categories" :key="cat.id">
-                              <a
-                                href="#"
-                                :class="{ active: selectedCategory === cat.id }"
-                                @click.prevent="selectedCategory = cat.id"
-                              >
-                                {{ cat.name }} ({{ cat.count }})
-                              </a>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
+                <div class="accordion">
+                  <div class="card border-0 mb-3">
+                    <div class="card-heading font-weight-bold mb-2">Chuyên Mục</div>
+                    <div class="card-body p-0">
+                      <ul class="list-unstyled">
+                        <li
+                          v-for="cat in categories"
+                          :key="cat.id"
+                          class="py-1 cursor-pointer"
+                          :class="{ 'font-weight-bold text-danger': selectedCategory === cat.id }"
+                          @click="selectedCategory = cat.id"
+                        >
+                          {{ cat.name }} ({{ cat.count }})
+                        </li>
+                      </ul>
                     </div>
                   </div>
 
-                  <!-- Thương hiệu -->
-                  <div class="card">
-                    <div class="card-heading">
-                      <a data-toggle="collapse" data-target="#collapseTwo">Thương Hiệu</a>
-                    </div>
-                    <div id="collapseTwo" class="collapse show" data-parent="#accordionExample">
-                      <div class="card-body">
-                        <div class="shop__sidebar__brand">
-                          <ul>
-                            <li v-for="brand in brands" :key="brand.id">
-                              <a
-                                href="#"
-                                :class="{ active: selectedBrand === brand.id }"
-                                @click.prevent="selectedBrand = brand.id"
-                              >
-                                {{ brand.name }}
-                              </a>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
+                  <!-- Lọc Thương hiệu -->
+                  <div class="card border-0 mb-3">
+                    <div class="card-heading font-weight-bold mb-2">Thương Hiệu</div>
+                    <div class="card-body p-0">
+                      <ul class="list-unstyled">
+                        <li
+                          v-for="brand in brands"
+                          :key="brand.id"
+                          class="py-1 cursor-pointer"
+                          :class="{ 'font-weight-bold text-danger': selectedBrand === brand.id }"
+                          @click="selectedBrand = brand.id"
+                        >
+                          {{ brand.name }}
+                        </li>
+                      </ul>
                     </div>
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
 
           <!-- Danh sách sản phẩm -->
           <div class="col-lg-9">
-            <div class="shop__product__option">
-              <div class="row">
+            <div class="shop__product__option mb-4">
+              <div class="row align-items-center">
                 <div class="col-lg-6 col-md-6 col-sm-6">
-                  <div class="shop__product__option__left">
-                    <p>Hiển thị {{ filteredProducts.length }} trên tổng số {{ allProducts.length }} sản phẩm</p>
-                  </div>
+                  <p class="mb-0">Hiển thị {{ filteredProducts.length }} sản phẩm</p>
                 </div>
                 <div class="col-lg-6 col-md-6 col-sm-6">
-                  <div class="shop__product__option__right">
-                    <p>Sắp xếp theo:</p>
-                    <select v-model="selectedSort" class="form-control d-inline-block w-auto border-0">
+                  <div class="d-flex align-items-center justify-content-end gap-2">
+                    <span>Sắp xếp:</span>
+                    <select v-model="selectedSort" class="form-control w-auto">
                       <option value="newest">Mới nhất</option>
                       <option value="price-asc">Giá: Thấp đến Cao</option>
                       <option value="price-desc">Giá: Cao đến Thấp</option>
@@ -160,19 +225,18 @@ const formatPrice = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency',
               </div>
             </div>
 
-            <!-- Grid sản phẩm -->
             <div class="row">
               <div
                 v-for="product in filteredProducts"
                 :key="product.id"
-                class="col-lg-4 col-md-6 col-sm-6"
+                class="col-lg-4 col-md-6 col-sm-6 mb-4"
               >
                 <div class="product__item">
                   <div class="product__item__pic set-bg" :style="{ backgroundImage: `url(${product.image})` }">
                     <span v-if="product.isNew" class="label">New</span>
                     <ul class="product__hover">
                       <li><a href="#"><img src="/img/icon/heart.png" alt="Yêu thích"></a></li>
-                      <li><RouterLink :to="`/products`"><img src="/img/icon/search.png" alt="Chi tiết"></RouterLink></li>
+                      <li><RouterLink to="/products"><img src="/img/icon/search.png" alt="Chi tiết"></RouterLink></li>
                     </ul>
                   </div>
                   <div class="product__item__text">
@@ -187,16 +251,22 @@ const formatPrice = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency',
               </div>
             </div>
 
-            <!-- Phân trang -->
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="product__pagination">
-                  <a class="active" href="#">1</a>
-                  <a href="#">2</a>
-                  <a href="#">3</a>
-                  <span>...</span>
-                  <a href="#">10</a>
-                </div>
+            <!-- Banner SECTION CATEGORY_MIDDLE Slide (Giữa Cửa Hàng - Tự động trượt 5s) -->
+            <div v-if="categoryMiddleBanners.length > 0" class="category-middle-banner my-5">
+              <div class="position-relative overflow-hidden rounded shadow-sm">
+                <template v-for="(banner, idx) in categoryMiddleBanners" :key="banner.id">
+                  <div
+                    v-show="idx === currentCategoryMiddleIndex"
+                    class="category-middle-item p-4 text-white fade-in-slide"
+                    :style="{ backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${banner.imageUrl})` }"
+                  >
+                    <span class="badge bg-danger mb-2">CATEGORY_MIDDLE • Slide {{ banner.sortOrder }}</span>
+                    <h3 class="font-weight-bold text-white mb-2">{{ banner.title }}</h3>
+                    <RouterLink :to="banner.targetUrl || '/products'" class="btn btn-outline-light btn-sm mt-2">
+                      Xem ngay <i class="fa fa-arrow-right ml-1"></i>
+                    </RouterLink>
+                  </div>
+                </template>
               </div>
             </div>
 
@@ -204,20 +274,41 @@ const formatPrice = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency',
         </div>
       </div>
     </section>
-    <!-- Shop Section End -->
   </div>
 </template>
 
 <style scoped>
-.breadcrumb-option {
-  background: #f3f2ee;
-  padding: 40px 0;
+.category-banner-item {
+  min-height: 220px;
+  background-size: cover;
+  background-position: center center;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.shop__sidebar__categories ul li a.active,
-.shop__sidebar__brand ul li a.active {
-  color: #e53637;
-  font-weight: 700;
+.category-middle-item {
+  min-height: 160px;
+  background-size: cover;
+  background-position: center center;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.fade-in-slide {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 
 .product__item__text .add-cart {
