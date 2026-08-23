@@ -86,11 +86,29 @@ const nextSlides = () => {
   }
 }
 
-const startAutoSlide = () => {
+const startAutoSlide1 = () => {
   stopAutoSlide()
   autoSlideTimer = setInterval(() => {
     nextSlides()
   }, 3000) // Trượt Slide sau mỗi 3 giây
+}
+const startAutoSlide2 = () => {
+  stopAutoSlide()
+  autoSlideTimer = setInterval(() => {
+    nextSlides()
+  }, 1000) // Trượt Slide sau mỗi 1 giây
+}
+const startAutoSlide3 = () => {
+  stopAutoSlide()
+  autoSlideTimer = setInterval(() => {
+    nextSlides()
+  }, 4000) // Trượt Slide sau mỗi 4 giây
+}
+const startAutoSlide4 = () => {
+  stopAutoSlide()
+  autoSlideTimer = setInterval(() => {
+    nextSlides()
+  }, 2000) // Trượt Slide sau mỗi 2 giây
 }
 
 const stopAutoSlide = () => {
@@ -138,7 +156,10 @@ const formatPrice = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency
 
 onMounted(() => {
   fetchHomeBanners()
-  startAutoSlide()
+  startAutoSlide1()
+  startAutoSlide2()
+  startAutoSlide3()
+  startAutoSlide4()
 })
 
 onUnmounted(() => {
@@ -150,7 +171,7 @@ onUnmounted(() => {
   <div class="home-page">
     <!-- 1. HOME_TOP Slide Banner (Hero Section Đầu Trang - Auto Slide 3s) -->
     <section class="hero mb-5">
-      <div class="hero__slider position-relative overflow-hidden" @mouseenter="stopAutoSlide" @mouseleave="startAutoSlide">
+      <div class="hero__slider position-relative overflow-hidden" @mouseenter="stopAutoSlide" @mouseleave="startAutoSlide1">
         <Transition name="slide-fade" mode="out-in">
           <div
             :key="indexHomeTop"
@@ -197,7 +218,7 @@ onUnmounted(() => {
             <div
               class="horizontal-banner-wrapper shadow-sm rounded overflow-hidden position-relative"
               @mouseenter="stopAutoSlide"
-              @mouseleave="startAutoSlide"
+              @mouseleave="startAutoSlide2"
             >
               <Transition name="slide-card" mode="out-in">
                 <div
@@ -250,7 +271,7 @@ onUnmounted(() => {
             <div
               class="horizontal-banner-wrapper shadow-sm rounded overflow-hidden position-relative"
               @mouseenter="stopAutoSlide"
-              @mouseleave="startAutoSlide"
+              @mouseleave="startAutoSlide3"
             >
               <Transition name="slide-card" mode="out-in">
                 <div
@@ -303,7 +324,7 @@ onUnmounted(() => {
             <div
               class="horizontal-banner-wrapper shadow-sm rounded overflow-hidden position-relative"
               @mouseenter="stopAutoSlide"
-              @mouseleave="startAutoSlide"
+              @mouseleave="startAutoSlide4"
             >
               <Transition name="slide-card" mode="out-in">
                 <div
