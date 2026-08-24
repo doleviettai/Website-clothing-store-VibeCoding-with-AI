@@ -12,9 +12,7 @@ import java.util.Optional;
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
 
-    /**
-     * Tìm vai trò theo code — dùng khi đăng ký để gán vai trò CLIENT.
-     * Ví dụ: findByCode("CLIENT") hoặc findByCode("ADMIN")
-     */
     Optional<Role> findByCode(String code);
+
+    Optional<Role> findByName(String name);
 }

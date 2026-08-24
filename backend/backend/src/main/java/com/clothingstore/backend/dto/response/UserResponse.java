@@ -3,22 +3,25 @@ package com.clothingstore.backend.dto.response;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.Set;
 
 /**
- * Thông tin cơ bản của user trả về frontend.
- * KHÔNG bao gồm: passwordHash, deletedAt.
+ * Response DTO trả về thông tin người dùng cho Admin.
  */
 @Getter
 @Builder
 public class UserResponse {
 
     private Long id;
-    private String email;
     private String fullName;
+    private String email;
     private String phone;
     private String avatarUrl;
     private String status;
-    // Danh sách mã vai trò: ["CLIENT"] hoặc ["ADMIN"]
-    private List<String> roles;
+    private Set<String> roles;
+    private LocalDateTime lastLoginAt;
+    private LocalDateTime lastLogoutAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

@@ -213,9 +213,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private UserResponse toUserResponse(User user) {
-        List<String> roleCodes = user.getRoles().stream()
+        Set<String> roleCodes = user.getRoles().stream()
                 .map(Role::getCode)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
         return UserResponse.builder()
                 .id(user.getId())
