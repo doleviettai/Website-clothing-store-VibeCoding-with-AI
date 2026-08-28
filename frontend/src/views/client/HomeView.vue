@@ -1,8 +1,14 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import * as bannerApi from '@/api/bannerApi'
+import * as productApi from '@/api/productApi'
 
-const activeTab = ref('all')
+const router = useRouter()
+
+// ─── State Tab Product Spad ─────────────────────────────────────
+// Mặc định tab 'best-sellers' (Bán Chạy Nhất)
+const activeTab = ref('best-sellers')
 
 const setTab = (tab) => {
   activeTab.value = tab
@@ -66,7 +72,7 @@ const fetchHomeBanners = async () => {
     if (resCatTop.data?.data?.length > 0) categoryTopBanners.value = resCatTop.data.data
     if (resCatMiddle.data?.data?.length > 0) categoryMiddleBanners.value = resCatMiddle.data.data
   } catch {
-    // Nếu chưa có backend API sẵn sàng thì dùng dữ liệu mẫu phía trên
+    //
   }
 }
 
@@ -90,25 +96,13 @@ const startAutoSlide1 = () => {
   stopAutoSlide()
   autoSlideTimer = setInterval(() => {
     nextSlides()
-  }, 3000) // Trượt Slide sau mỗi 3 giây
+  }, 3000)
 }
 const startAutoSlide2 = () => {
   stopAutoSlide()
   autoSlideTimer = setInterval(() => {
     nextSlides()
-  }, 1000) // Trượt Slide sau mỗi 1 giây
-}
-const startAutoSlide3 = () => {
-  stopAutoSlide()
-  autoSlideTimer = setInterval(() => {
-    nextSlides()
-  }, 4000) // Trượt Slide sau mỗi 4 giây
-}
-const startAutoSlide4 = () => {
-  stopAutoSlide()
-  autoSlideTimer = setInterval(() => {
-    nextSlides()
-  }, 2000) // Trượt Slide sau mỗi 2 giây
+  }, 3000)
 }
 
 const stopAutoSlide = () => {
@@ -118,7 +112,7 @@ const stopAutoSlide = () => {
   }
 }
 
-// Cho phép người dùng bấm trượt thủ công
+// Bấm trượt thủ công
 const prevMiddleSlide = () => {
   indexHomeMiddle.value = (indexHomeMiddle.value - 1 + homeMiddleBanners.value.length) % homeMiddleBanners.value.length
 }
@@ -140,26 +134,89 @@ const nextCatMiddleSlide = () => {
   indexCategoryMiddle.value = (indexCategoryMiddle.value + 1) % categoryMiddleBanners.value.length
 }
 
-// Mockup danh sách sản phẩm
-const products = ref([
-  { id: 1, name: 'Áo Khoác Biker Piqué', category: 'new-arrivals', price: 1550000, originalPrice: 1800000, image: '/img/product/product-1.jpg', tag: 'New', rating: 5 },
-  { id: 2, name: 'Áo Thun Basic Cotton Unisex', category: 'hot-sales', price: 350000, image: '/img/product/product-2.jpg', tag: 'Sale', rating: 4 },
-  { id: 3, name: 'Áo Sơ Mi Nam Tay Dài Oxford', category: 'new-arrivals', price: 620000, image: '/img/product/product-3.jpg', rating: 5 },
-  { id: 4, name: 'Quần Jean Nam Skinny Stretch', category: 'hot-sales', price: 890000, image: '/img/product/product-4.jpg', rating: 4 },
-  { id: 5, name: 'Áo Polo Nam Thêu Logo', category: 'new-arrivals', price: 490000, image: '/img/product/product-5.jpg', tag: 'New', rating: 5 },
-  { id: 6, name: 'Áo Khoác Blazer Nam Form Rộng', category: 'hot-sales', price: 2100000, image: '/img/product/product-6.jpg', rating: 5 },
-  { id: 7, name: 'Quần Short Nam Thể Thao', category: 'new-arrivals', price: 280000, image: '/img/product/product-7.jpg', rating: 4 },
-  { id: 8, name: 'Áo Hoodies Fleece Nỉ Bông', category: 'hot-sales', price: 750000, image: '/img/product/product-8.jpg', tag: 'Sale', rating: 5 },
+// ─── Danh Sách Sản Phẩm Cho Product Spad (15 Sản Phẩm) ─────────────
+const rawProducts = ref([
+  { id: 1, name: 'Áo Khoác Biker Piqué Nam', price: 1550000, salePrice: 1250000, thumbnail: '/img/product/product-1.jpg', rating: 5.0, tag: 'Hot', isSale: true, createdAt: '2026-08-20' },
+  { id: 2, name: 'Áo Thun Basic Cotton Unisex', price: 350000, salePrice: 290000, thumbnail: '/img/product/product-2.jpg', rating: 5.0, tag: 'Sale', isSale: true, createdAt: '2026-08-25' },
+  { id: 3, name: 'Áo Sơ Mi Nam Tay Dài Oxford', price: 620000, salePrice: null, thumbnail: '/img/product/product-3.jpg', rating: 5.0, tag: 'New', isSale: false, createdAt: '2026-08-28' },
+  { id: 4, name: 'Quần Jean Nam Skinny Stretch Slimfit', price: 890000, salePrice: 690000, thumbnail: '/img/product/product-4.jpg', rating: 4.8, tag: 'Sale', isSale: true, createdAt: '2026-08-22' },
+  { id: 5, name: 'Áo Polo Nam Thêu Logo Cao Cấp', price: 490000, salePrice: null, thumbnail: '/img/product/product-5.jpg', rating: 5.0, tag: 'New', isSale: false, createdAt: '2026-08-27' },
+  { id: 6, name: 'Áo Khoác Blazer Nam Form Rộng Phong Cách', price: 2100000, salePrice: 1750000, thumbnail: '/img/product/product-6.jpg', rating: 5.0, tag: 'Sale', isSale: true, createdAt: '2026-08-21' },
+  { id: 7, name: 'Quần Short Nam Thể Thao Co Giãn', price: 280000, salePrice: null, thumbnail: '/img/product/product-7.jpg', rating: 4.6, tag: 'New', isSale: false, createdAt: '2026-08-26' },
+  { id: 8, name: 'Áo Hoodies Fleece Nỉ Bông Ấm Áp', price: 750000, salePrice: 590000, thumbnail: '/img/product/product-8.jpg', rating: 5.0, tag: 'Hot', isSale: true, createdAt: '2026-08-24' },
+  { id: 9, name: 'Áo Len Nam Cổ Lọ Dệt Kim', price: 580000, salePrice: 480000, thumbnail: '/img/product/product-1.jpg', rating: 5.0, tag: 'Sale', isSale: true, createdAt: '2026-08-23' },
+  { id: 10, name: 'Quần Kaki Nam Dáng Dài Regular', price: 520000, salePrice: null, thumbnail: '/img/product/product-2.jpg', rating: 4.7, tag: 'New', isSale: false, createdAt: '2026-08-28' },
+  { id: 11, name: 'Áo Khoác Gió Nam 2 Lớp Chống Nước', price: 690000, salePrice: 550000, thumbnail: '/img/product/product-3.jpg', rating: 5.0, tag: 'Sale', isSale: true, createdAt: '2026-08-19' },
+  { id: 12, name: 'Bộ Thể Thao Nam Thun Lạnh Co Giãn 4 Chiều', price: 450000, salePrice: 380000, thumbnail: '/img/product/product-4.jpg', rating: 5.0, tag: 'Hot', isSale: true, createdAt: '2026-08-25' },
+  { id: 13, name: 'Áo Sơ Mi Họa Tiết Hawaii Đi Biển', price: 390000, salePrice: null, thumbnail: '/img/product/product-5.jpg', rating: 4.5, tag: 'New', isSale: false, createdAt: '2026-08-27' },
+  { id: 14, name: 'Quần Jogger Nam Thể Thao Bo Gấu', price: 420000, salePrice: 350000, thumbnail: '/img/product/product-6.jpg', rating: 5.0, tag: 'Sale', isSale: true, createdAt: '2026-08-22' },
+  { id: 15, name: 'Áo Cardigan Nam Dệt Kim Cổ V', price: 650000, salePrice: null, thumbnail: '/img/product/product-7.jpg', rating: 4.9, tag: 'New', isSale: false, createdAt: '2026-08-28' },
 ])
+
+// Tải sản phẩm thực từ API Backend
+const fetchProductsFromApi = async () => {
+  try {
+    const res = await productApi.getClientProducts()
+    if (res.data?.data?.length > 0) {
+      rawProducts.value = res.data.data.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        salePrice: p.salePrice,
+        thumbnail: p.thumbnailUrl || '/img/product/product-1.jpg',
+        rating: p.averageRating || 5.0,
+        tag: p.salePrice ? 'Sale' : (p.isFeatured ? 'Hot' : 'New'),
+        isSale: !!p.salePrice,
+        createdAt: p.createdAt
+      }))
+    }
+  } catch {
+    //
+  }
+}
+
+// ─── Computed Lọc 10 - 15 Sản Phẩm Cho Từng Mục ────────────────────
+
+// 1. Mục Bán Chạy Nhất (Các sản phẩm có đánh giá sao cao 5 sao / >= 4.8)
+const bestSellerProducts = computed(() => {
+  return rawProducts.value
+    .filter(p => p.rating >= 4.8)
+    .slice(0, 15)
+})
+
+// 2. Mục Bán Hàng Mới Về (Tất cả sản phẩm xếp mới nhất)
+const newArrivalProducts = computed(() => {
+  return [...rawProducts.value]
+    .sort((a, b) => b.id - a.id)
+    .slice(0, 15)
+})
+
+// 3. Mục Hot Sale (Sản phẩm có giá khuyến mãi giảm giá)
+const hotSaleProducts = computed(() => {
+  return rawProducts.value
+    .filter(p => p.salePrice && p.salePrice < p.price)
+    .slice(0, 15)
+})
+
+// Danh sách sản phẩm hiển thị theo tab đang chọn
+const displayedProducts = computed(() => {
+  if (activeTab.value === 'best-sellers') return bestSellerProducts.value
+  if (activeTab.value === 'new-arrivals') return newArrivalProducts.value
+  if (activeTab.value === 'hot-sales') return hotSaleProducts.value
+  return rawProducts.value.slice(0, 15)
+})
+
+// Điều hướng sang trang cửa hàng khi bấm nút xem thêm
+const goToShop = () => {
+  router.push('/products')
+}
 
 const formatPrice = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
 
 onMounted(() => {
   fetchHomeBanners()
+  fetchProductsFromApi()
   startAutoSlide1()
-  startAutoSlide2()
-  startAutoSlide3()
-  startAutoSlide4()
 })
 
 onUnmounted(() => {
@@ -182,9 +239,6 @@ onUnmounted(() => {
               <div class="row">
                 <div class="col-xl-6 col-lg-7 col-md-8">
                   <div class="hero__text">
-                    <h6>
-                      <span class="badge bg-danger text-white mr-2">HOME_TOP • Slide {{ homeTopBanners[indexHomeTop]?.sortOrder }}</span>
-                    </h6>
                     <h2>{{ homeTopBanners[indexHomeTop]?.title }}</h2>
                     <p>{{ homeTopBanners[indexHomeTop]?.description || 'Thương hiệu chuyên sáng tạo các sản phẩm thời trang cao cấp.' }}</p>
                     <RouterLink :to="homeTopBanners[indexHomeTop]?.targetUrl || '/products'" class="primary-btn">
@@ -229,7 +283,7 @@ onUnmounted(() => {
                     <img :src="homeMiddleBanners[indexHomeMiddle]?.imageUrl" :alt="homeMiddleBanners[indexHomeMiddle]?.title" class="img-fluid w-100 h-100 object-cover">
                   </div>
                   <div class="banner-text-col w-50 p-4">
-                    <span class="badge bg-info text-white mb-2">HOME_MIDDLE (Cột Phải) • Slide {{ homeMiddleBanners[indexHomeMiddle]?.sortOrder }}</span>
+                    <span class="badge bg-danger text-white mb-2">HOT BANNER</span>
                     <h3 class="h4 font-weight-bold text-dark mb-2">{{ homeMiddleBanners[indexHomeMiddle]?.title }}</h3>
                     <p class="text-muted small mb-3">{{ homeMiddleBanners[indexHomeMiddle]?.description }}</p>
                     <RouterLink :to="homeMiddleBanners[indexHomeMiddle]?.targetUrl || '/products'" class="btn btn-outline-danger btn-sm text-uppercase font-weight-bold">
@@ -271,21 +325,21 @@ onUnmounted(() => {
             <div
               class="horizontal-banner-wrapper shadow-sm rounded overflow-hidden position-relative"
               @mouseenter="stopAutoSlide"
-              @mouseleave="startAutoSlide3"
+              @mouseleave="startAutoSlide2"
             >
               <Transition name="slide-card" mode="out-in">
                 <div
                   :key="indexCategoryTop"
-                  class="horizontal-banner-card bg-dark text-white d-flex align-items-center flex-row-reverse"
+                  class="horizontal-banner-card bg-white d-flex align-items-center flex-row"
                 >
                   <div class="banner-img-col w-50 overflow-hidden">
                     <img :src="categoryTopBanners[indexCategoryTop]?.imageUrl" :alt="categoryTopBanners[indexCategoryTop]?.title" class="img-fluid w-100 h-100 object-cover">
                   </div>
                   <div class="banner-text-col w-50 p-4">
-                    <span class="badge bg-warning text-dark mb-2">CATEGORY_TOP (Cột Trái) • Slide {{ categoryTopBanners[indexCategoryTop]?.sortOrder }}</span>
-                    <h3 class="h4 font-weight-bold text-white mb-2">{{ categoryTopBanners[indexCategoryTop]?.title }}</h3>
-                    <p class="text-white-50 small mb-3">{{ categoryTopBanners[indexCategoryTop]?.description }}</p>
-                    <RouterLink :to="categoryTopBanners[indexCategoryTop]?.targetUrl || '/products'" class="btn btn-danger btn-sm text-uppercase font-weight-bold">
+                    <span class="badge bg-primary text-white mb-2">BỘ SƯU TẬP TỪ MỚI VỀ</span>
+                    <h3 class="h4 font-weight-bold text-dark mb-2">{{ categoryTopBanners[indexCategoryTop]?.title }}</h3>
+                    <p class="text-muted small mb-3">{{ categoryTopBanners[indexCategoryTop]?.description }}</p>
+                    <RouterLink :to="categoryTopBanners[indexCategoryTop]?.targetUrl || '/products'" class="btn btn-outline-primary btn-sm text-uppercase font-weight-bold">
                       Khám phá ngay <i class="fa fa-arrow-right ml-1"></i>
                     </RouterLink>
                   </div>
@@ -316,7 +370,7 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <!-- 4. CATEGORY_MIDDLE Banner (Nằm Dưới CATEGORY_TOP - CỘT PHẢI - Auto Slide 3s Trượt Ngang) -->
+    <!-- 4. CATEGORY_MIDDLE Banner (Nằm Dưới CATEGORY_TOP - DỰNG CỘT PHẢI THẲNG HÀNG VỚI HOME_MIDDLE) -->
     <section class="banner-section my-5">
       <div class="container">
         <div class="row justify-content-end">
@@ -324,22 +378,22 @@ onUnmounted(() => {
             <div
               class="horizontal-banner-wrapper shadow-sm rounded overflow-hidden position-relative"
               @mouseenter="stopAutoSlide"
-              @mouseleave="startAutoSlide4"
+              @mouseleave="startAutoSlide2"
             >
               <Transition name="slide-card" mode="out-in">
                 <div
                   :key="indexCategoryMiddle"
-                  class="horizontal-banner-card bg-light border d-flex align-items-center flex-row"
+                  class="horizontal-banner-card bg-white d-flex align-items-center flex-row"
                 >
                   <div class="banner-img-col w-50 overflow-hidden">
                     <img :src="categoryMiddleBanners[indexCategoryMiddle]?.imageUrl" :alt="categoryMiddleBanners[indexCategoryMiddle]?.title" class="img-fluid w-100 h-100 object-cover">
                   </div>
                   <div class="banner-text-col w-50 p-4">
-                    <span class="badge bg-secondary text-white mb-2">CATEGORY_MIDDLE (Cột Phải) • Slide {{ categoryMiddleBanners[indexCategoryMiddle]?.sortOrder }}</span>
+                    <span class="badge bg-warning text-dark mb-2">ƯU ĐÃI THÀNH VIÊN</span>
                     <h3 class="h4 font-weight-bold text-dark mb-2">{{ categoryMiddleBanners[indexCategoryMiddle]?.title }}</h3>
                     <p class="text-muted small mb-3">{{ categoryMiddleBanners[indexCategoryMiddle]?.description }}</p>
-                    <RouterLink :to="categoryMiddleBanners[indexCategoryMiddle]?.targetUrl || '/products'" class="btn btn-dark btn-sm text-uppercase font-weight-bold">
-                      Xem ưu đãi ngay <i class="fa fa-arrow-right ml-1"></i>
+                    <RouterLink :to="categoryMiddleBanners[indexCategoryMiddle]?.targetUrl || '/products'" class="btn btn-outline-warning btn-sm text-uppercase font-weight-bold text-dark">
+                      Xem ngay <i class="fa fa-arrow-right ml-1"></i>
                     </RouterLink>
                   </div>
                 </div>
@@ -369,42 +423,73 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <!-- Product Section Begin -->
-    <section class="product spad">
+    <!-- NÂNG CẤP PRODUCT SPAD (Khu vực danh sách sản phẩm) -->
+    <section class="product spad py-5">
       <div class="container">
         <div class="row">
           <div class="col-lg-12">
-            <ul class="filter__controls">
-              <li :class="{ active: activeTab === 'all' }" @click="setTab('all')">Bán Chạy Nhất</li>
-              <li :class="{ active: activeTab === 'new-arrivals' }" @click="setTab('new-arrivals')">Hàng Mới Về</li>
-              <li :class="{ active: activeTab === 'hot-sales' }" @click="setTab('hot-sales')">Hot Sale</li>
+            <!-- Filter Controls Tabs -->
+            <ul class="filter__controls text-center mb-5">
+              <li :class="{ active: activeTab === 'best-sellers' }" @click="setTab('best-sellers')">
+                <i class="fa fa-fire mr-1 text-danger"></i> Bán Chạy Nhất (⭐ 5 Sao)
+              </li>
+              <li :class="{ active: activeTab === 'new-arrivals' }" @click="setTab('new-arrivals')">
+                <i class="fa fa-tag mr-1 text-primary"></i> Hàng Mới Về
+              </li>
+              <li :class="{ active: activeTab === 'hot-sales' }" @click="setTab('hot-sales')">
+                <i class="fa fa-percent mr-1 text-warning"></i> Hot Sale Giảm Giá
+              </li>
             </ul>
           </div>
         </div>
 
+        <!-- Danh Sách Sản Phẩm (Lọc 10 - 15 Sản Phẩm) -->
         <div class="row product__filter">
           <div
-            v-for="product in products.filter(p => activeTab === 'all' || p.category === activeTab)"
+            v-for="product in displayedProducts"
             :key="product.id"
-            class="col-lg-3 col-md-6 col-sm-6 mb-4"
+            class="col-lg-3 col-md-4 col-sm-6 mb-4"
           >
-            <div class="product__item">
-              <div class="product__item__pic set-bg" :style="{ backgroundImage: `url(${product.image})` }">
-                <span v-if="product.tag" class="label" :class="{ 'sale-label': product.tag === 'Sale' }">{{ product.tag }}</span>
+            <div class="product__item h-100 border-0 shadow-sm rounded overflow-hidden bg-white">
+              <div class="product__item__pic set-bg position-relative" :style="{ backgroundImage: `url(${product.thumbnail})` }">
+                <span
+                  v-if="product.isSale || product.tag"
+                  class="label"
+                  :class="product.isSale ? 'sale-label bg-danger text-white' : 'bg-dark text-white'"
+                >
+                  {{ product.isSale ? 'GIẢM GIÁ' : product.tag }}
+                </span>
                 <ul class="product__hover">
-                  <li><a href="#"><img src="/img/icon/heart.png" alt="Yêu thích"></a></li>
-                  <li><RouterLink to="/products"><img src="/img/icon/search.png" alt="Chi tiết"></RouterLink></li>
+                  <li><a href="#" title="Yêu thích"><img src="/img/icon/heart.png" alt="Yêu thích"></a></li>
+                  <li><RouterLink to="/products" title="Xem chi tiết"><img src="/img/icon/search.png" alt="Chi tiết"></RouterLink></li>
                 </ul>
               </div>
-              <div class="product__item__text">
-                <h6>{{ product.name }}</h6>
-                <RouterLink to="/cart" class="add-cart">+ Thêm vào giỏ</RouterLink>
-                <div class="rating">
-                  <i v-for="star in 5" :key="star" class="fa" :class="star <= product.rating ? 'fa-star' : 'fa-star-o'"></i>
+              <div class="product__item__text p-3">
+                <h6 class="font-weight-bold text-dark mb-2 text-truncate" :title="product.name">{{ product.name }}</h6>
+                <RouterLink to="/cart" class="add-cart text-danger font-weight-bold d-block mb-2">+ Thêm vào giỏ</RouterLink>
+                <div class="rating text-warning small mb-2">
+                  <i v-for="star in 5" :key="star" class="fa" :class="star <= Math.round(product.rating) ? 'fa-star' : 'fa-star-o'"></i>
+                  <span class="text-muted ml-1 font-weight-normal">({{ product.rating.toFixed(1) }})</span>
                 </div>
-                <h5>{{ formatPrice(product.price) }}</h5>
+                <div class="d-flex align-items-center gap-2">
+                  <h5 class="font-weight-bold text-danger m-0">
+                    {{ formatPrice(product.salePrice || product.price) }}
+                  </h5>
+                  <small v-if="product.salePrice" class="text-muted text-decoration-line-through">
+                    {{ formatPrice(product.price) }}
+                  </small>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Nút XEM THÊM sản phẩm (Chuyển sang trang Cửa Hàng /products) -->
+        <div class="row">
+          <div class="col-lg-12 text-center mt-4">
+            <button class="primary-btn btn-load-more px-5 py-3 border-0 rounded font-weight-bold" @click="goToShop">
+              XEM THÊM SẢN PHẨM <i class="fa fa-arrow-right ml-2"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -448,33 +533,34 @@ onUnmounted(() => {
 /* ─── Vue Transition Slide Animations (Trượt Ngang Mượt Mà) ─── */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s ease-in-out;
 }
 .slide-fade-enter-from {
   opacity: 0;
-  transform: translateX(40px);
+  transform: translateX(30px);
 }
 .slide-fade-leave-to {
   opacity: 0;
-  transform: translateX(-40px);
+  transform: translateX(-30px);
 }
 
 .slide-card-enter-active,
 .slide-card-leave-active {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
 }
 .slide-card-enter-from {
+  transform: translateX(100%);
   opacity: 0;
-  transform: translateX(60px);
 }
 .slide-card-leave-to {
+  transform: translateX(-100%);
   opacity: 0;
-  transform: translateX(-60px);
 }
 
+/* Slide dots */
 .slide-dots {
   position: absolute;
-  bottom: 24px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -486,9 +572,9 @@ onUnmounted(() => {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: background 0.3s;
 }
 
 .slide-dot.active {
@@ -497,51 +583,57 @@ onUnmounted(() => {
   border-radius: 6px;
 }
 
-/* Horizontal Card Banners */
+/* Horizontal Banner style */
 .horizontal-banner-wrapper {
-  position: relative;
   min-height: 220px;
+  background: #ffffff;
 }
 
 .horizontal-banner-card {
   min-height: 220px;
 }
 
-.object-cover {
-  object-fit: cover;
-  min-height: 220px;
+.banner-img-col {
+  height: 220px;
 }
 
-/* Nút mũi tên chuyển card */
+.banner-img-col img {
+  object-fit: cover;
+}
+
 .card-nav-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
   background: rgba(0, 0, 0, 0.4);
-  color: #ffffff;
+  color: #fff;
   border: none;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 10;
-  transition: all 0.2s;
+  transition: background 0.2s;
+  z-index: 5;
 }
 
 .card-nav-btn:hover {
   background: #e53637;
 }
 
-.prev-card { left: 10px; }
-.next-card { right: 10px; }
+.prev-card {
+  left: 10px;
+}
+
+.next-card {
+  right: 10px;
+}
 
 .banner-mini-dots {
   position: absolute;
-  bottom: 12px;
+  bottom: 8px;
   right: 20px;
   display: flex;
   gap: 6px;
@@ -552,41 +644,49 @@ onUnmounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  transition: all 0.3s;
 }
 
 .mini-dot.active {
   background: #e53637;
-  width: 20px;
-  border-radius: 4px;
 }
 
-.sale-label {
-  background: #111111 !important;
-  color: #ffffff !important;
+/* Product Spad Filter Controls */
+.filter__controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding-left: 0;
+  list-style: none;
 }
 
-.product__item__text .add-cart {
-  font-size: 15px;
-  color: #e53637;
+.filter__controls li {
+  font-size: 1.1rem;
   font-weight: 700;
-  position: absolute;
-  left: 0;
-  top: 22px;
-  opacity: 0;
-  visibility: hidden;
-  transition: all, 0.3s;
+  color: #b7b7b7;
+  cursor: pointer;
+  padding: 8px 20px;
+  border-radius: 30px;
+  transition: all 0.3s ease;
 }
 
-.product__item:hover .product__item__text .add-cart {
-  opacity: 1;
-  visibility: visible;
+.filter__controls li.active,
+.filter__controls li:hover {
+  color: #111111;
+  background: #f3f2ee;
 }
 
-.rating i {
-  color: #f7941d;
-  margin-right: 2px;
+.btn-load-more {
+  background: #111111;
+  color: #ffffff;
+  letter-spacing: 2px;
+  transition: background 0.3s;
+  cursor: pointer;
+}
+
+.btn-load-more:hover {
+  background: #e53637;
+  color: #ffffff;
 }
 </style>

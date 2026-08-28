@@ -21,7 +21,14 @@ public interface ProductService {
     );
 
     /**
-     * Client: Lấy danh sách sản phẩm đang hoạt động.
+     * Client: Lấy danh sách sản phẩm public có phân trang, tìm kiếm realtime, lọc category, brand và sắp xếp sort.
+     */
+    ApiResponse<PageResponse<ProductResponse>> getClientProducts(
+            String keyword, Long categoryId, Long brandId, String sort, int page, int size
+    );
+
+    /**
+     * Client: Lấy danh sách tất cả sản phẩm đang hoạt động (không phân trang).
      */
     ApiResponse<List<ProductResponse>> getClientActiveProducts();
 

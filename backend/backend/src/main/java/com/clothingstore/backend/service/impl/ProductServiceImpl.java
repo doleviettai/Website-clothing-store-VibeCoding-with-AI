@@ -91,6 +91,55 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public ApiResponse<PageResponse<ProductResponse>> getClientProducts(
+            String keyword, Long categoryId, Long brandId, String sort, int page, int size
+    ) {
+        // Xử lý Sắp xếp sort (newest, price_asc, price_desc)
+        Sort sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
+        if ("price_asc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.ASC, "price");
+        } else if ("price_desc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.DESC, "price");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+
+        Specification<Product> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Chỉ lấy sản phẩm ACTIVE và chưa xóa mềm
+            predicates.add(cb.isNull(root.get("deletedAt")));
+            predicates.add(cb.equal(root.get("status"), "ACTIVE"));
+
+            // Tìm kiếm realtime không phân biệt hoa/thường theo tên hoặc slug
+            if (keyword != null && !keyword.isBlank()) {
+                String likeKeyword = "%" + keyword.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), likeKeyword),
+                        cb.like(cb.lower(root.get("slug")), likeKeyword)
+                ));
+            }
+
+            // Lọc theo Chuyên mục categoryId
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            }
+
+            // Lọc theo Thương hiệu brandId
+            if (brandId != null) {
+                predicates.add(cb.equal(root.get("brand").get("id"), brandId));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Product> productPage = productRepository.findAll(spec, pageable);
+        Page<ProductResponse> responsePage = productPage.map(this::toProductResponse);
+
+        return ApiResponse.success("Lấy danh sách sản phẩm cửa hàng thành công", PageResponse.from(responsePage));
+    }
+
+    @Override
     public ApiResponse<List<ProductResponse>> getClientActiveProducts() {
         List<Product> products = productRepository.findAllByStatusAndDeletedAtIsNullOrderByIdDesc("ACTIVE");
         List<ProductResponse> list = products.stream().map(this::toProductResponse).collect(Collectors.toList());

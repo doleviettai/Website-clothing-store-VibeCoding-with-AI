@@ -9,12 +9,12 @@ export const getAdminProducts = (params) => {
   return axiosInstance.get('/admin/products', { params })
 }
 
-// Client: Lấy danh sách sản phẩm active
-export const getClientProducts = () => {
-  return axiosInstance.get('/products')
+// Client: Lấy danh sách sản phẩm cửa hàng (phân trang, tìm kiếm realtime, lọc category, brand, sort)
+export const getClientProducts = (params) => {
+  return axiosInstance.get('/products', { params })
 }
 
-// Client: Lấy chi tiết sản phẩm
+// Client: Lấy chi tiết sản phẩm theo ID
 export const getProductById = (id) => {
   return axiosInstance.get(`/products/${id}`)
 }
