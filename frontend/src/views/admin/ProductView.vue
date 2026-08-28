@@ -43,7 +43,9 @@ const form = reactive({
   brandId: '',
   price: 0,
   salePrice: null,
-  stockQuantity: 0,
+  stockQuantity: 10,
+  availableSizes: 'S, M, L, XL, XXL',
+  availableColors: 'Đen, Trắng, Xanh Navy, Xám',
   shortDescription: '',
   description: '',
   thumbnailUrl: '',
@@ -59,7 +61,9 @@ const formErrors = reactive({
   stockQuantity: '',
 })
 
-// ─── Methods ──────────────────────────────────────────────────
+// Danh sách gợi ý Kích cỡ & Màu sắc nhanh
+const presetSizes = ['S', 'M', 'L', 'XL', 'XXL', '28', '29', '30', '31', '32', '33', '34']
+const presetColors = ['Đen', 'Trắng', 'Xanh Navy', 'Xám', 'Đỏ', 'Vàng', 'Beige', 'Xanh Lá']
 
 // Tải danh sách Sản phẩm cho Bảng (Table)
 const fetchProducts = async () => {
@@ -140,6 +144,8 @@ const openAddModal = () => {
   form.price = 0
   form.salePrice = null
   form.stockQuantity = 10
+  form.availableSizes = 'S, M, L, XL, XXL'
+  form.availableColors = 'Đen, Trắng, Xanh Navy, Xám'
   form.shortDescription = ''
   form.description = ''
   form.thumbnailUrl = ''
@@ -166,6 +172,8 @@ const openEditModal = (product) => {
   form.price = product.price
   form.salePrice = product.salePrice || null
   form.stockQuantity = product.stockQuantity
+  form.availableSizes = product.availableSizes || 'S, M, L, XL, XXL'
+  form.availableColors = product.availableColors || 'Đen, Trắng, Xanh Navy, Xám'
   form.shortDescription = product.shortDescription || ''
   form.description = product.description || ''
   form.thumbnailUrl = product.thumbnailUrl || ''
@@ -179,6 +187,28 @@ const openEditModal = (product) => {
   selectedImageFile.value = null
   imagePreviewUrl.value = product.thumbnailUrl || ''
   isModalOpen.value = true
+}
+
+// Thêm/Xóa Nhanh Kích cỡ
+const togglePresetSize = (size) => {
+  let sizes = form.availableSizes ? form.availableSizes.split(',').map(s => s.trim()).filter(Boolean) : []
+  if (sizes.includes(size)) {
+    sizes = sizes.filter(s => s !== size)
+  } else {
+    sizes.push(size)
+  }
+  form.availableSizes = sizes.join(', ')
+}
+
+// Thêm/Xóa Nhanh Màu sắc
+const togglePresetColor = (color) => {
+  let colors = form.availableColors ? form.availableColors.split(',').map(c => c.trim()).filter(Boolean) : []
+  if (colors.includes(color)) {
+    colors = colors.filter(c => c !== color)
+  } else {
+    colors.push(color)
+  }
+  form.availableColors = colors.join(', ')
 }
 
 // Xử lý lưu sản phẩm
@@ -208,6 +238,8 @@ const handleSubmit = async () => {
       price: Number(form.price),
       salePrice: form.salePrice ? Number(form.salePrice) : null,
       stockQuantity: Number(form.stockQuantity) || 0,
+      availableSizes: form.availableSizes,
+      availableColors: form.availableColors,
       shortDescription: form.shortDescription,
       description: form.description,
       thumbnailUrl: form.thumbnailUrl,
@@ -248,28 +280,40 @@ const handleSubmit = async () => {
   }
 }
 
-// Xử lý xóa sản phẩm
+// Xử lý Xóa sản phẩm
 const handleDelete = async (product) => {
-  if (confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`)) {
-    try {
-      await productApi.deleteProduct(product.id)
-      successMessage.value = 'Đã xóa sản phẩm thành công!'
-      await fetchProducts()
-      setTimeout(() => {
-        successMessage.value = ''
-      }, 3000)
-    } catch (err) {
-      alert(err.response?.data?.message || 'Không thể xóa sản phẩm này.')
-    }
+  if (!confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`)) return
+
+  try {
+    await productApi.deleteProduct(product.id)
+    successMessage.value = 'Xóa sản phẩm thành công!'
+    await fetchProducts()
+    setTimeout(() => {
+      successMessage.value = ''
+    }, 3000)
+  } catch (err) {
+    errorMessage.value = err.response?.data?.message || 'Không thể xóa sản phẩm.'
   }
 }
 
-const formatPrice = (value) => {
-  if (!value) return '0 đ'
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
-}
+// Live Search AJAX Debounce
+let searchTimer = null
+watch(
+  () => filters.keyword,
+  () => {
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+      filters.page = 0
+      fetchProducts()
+    }, 300)
+  }
+)
 
-// Phân trang
+watch([() => filters.categoryId, () => filters.brandId, () => filters.status], () => {
+  filters.page = 0
+  fetchProducts()
+})
+
 const changePage = (newPage) => {
   if (newPage >= 0 && newPage < pagination.totalPages) {
     filters.page = newPage
@@ -277,19 +321,10 @@ const changePage = (newPage) => {
   }
 }
 
-// ─── AJAX Live Search (Tự động nạp dữ liệu khi nhập từ khóa) ───
-let searchDebounceTimer = null
-
-watch(
-  () => filters.keyword,
-  () => {
-    clearTimeout(searchDebounceTimer)
-    searchDebounceTimer = setTimeout(() => {
-      filters.page = 0
-      fetchProducts()
-    }, 300)
-  }
-)
+const formatPrice = (val) => {
+  if (val === null || val === undefined) return '0 đ'
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)
+}
 
 onMounted(() => {
   fetchProducts()
@@ -298,30 +333,31 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="admin-product-page">
-    <!-- Header Trực quan -->
-    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+  <div class="product-admin-view p-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h3 class="page-title">Quản Lý Sản Phẩm</h3>
-        <p class="text-muted mb-0">Quản lý kho hàng, giá bán, chuyên mục, thương hiệu, lượt yêu thích và đánh giá</p>
+        <h3 class="font-weight-bold text-dark m-0">
+          <i class="fa fa-cubes text-danger mr-2"></i> QUẢN LÝ SẢN PHẨM & BIẾN THỂ (PRODUCT ADMIN)
+        </h3>
+        <p class="text-muted small m-0">Quản lý thêm, xem, sửa, xóa sản phẩm, giá bán, tồn kho, kích cỡ và màu sắc.</p>
       </div>
-      <button class="btn btn-primary d-flex align-items-center gap-2" @click="openAddModal">
-        <i class="fa fa-plus"></i>
-        <span>Thêm Sản Phẩm Mới</span>
+      <button class="btn btn-danger font-weight-bold shadow-sm" @click="openAddModal">
+        <i class="fa fa-plus-circle mr-1"></i> Thêm Sản Phẩm Mới
       </button>
     </div>
 
-    <!-- Alert thông báo -->
-    <div v-if="successMessage" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+    <!-- Alert Messages -->
+    <div v-if="successMessage" class="alert alert-success alert-dismissible fade show" role="alert">
       <i class="fa fa-check-circle mr-2"></i> {{ successMessage }}
     </div>
-    <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-      <i class="fa fa-exclamation-circle mr-2"></i> {{ errorMessage }}
+    <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="fa fa-exclamation-triangle mr-2"></i> {{ errorMessage }}
     </div>
 
-    <!-- Thanh Tìm kiếm & Bộ lọc (AJAX Live Search) -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-body">
+    <!-- Thanh Tìm Kiếm & Bộ Lọc -->
+    <div class="card border-0 shadow-sm rounded-lg mb-4">
+      <div class="card-body bg-light rounded-lg">
         <div class="row g-3 align-items-center">
           <div class="col-md-4">
             <div class="input-group">
@@ -332,118 +368,108 @@ onMounted(() => {
                 v-model="filters.keyword"
                 type="text"
                 class="form-control border-start-0"
-                placeholder="Nhập tên sản phẩm hoặc slug để tìm kiếm tức thì (Live Search)..."
+                placeholder="Nhập tên sản phẩm để tìm kiếm..."
               />
             </div>
           </div>
           <div class="col-md-3">
-            <select v-model="filters.categoryId" class="form-control" @change="fetchProducts">
-              <option value="">-- Tất cả chuyên mục --</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
+            <select v-model="filters.categoryId" class="form-control">
+              <option value="">-- Tất cả Chuyên Mục --</option>
+              <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </select>
           </div>
           <div class="col-md-3">
-            <select v-model="filters.brandId" class="form-control" @change="fetchProducts">
-              <option value="">-- Tất cả thương hiệu --</option>
-              <option v-for="brand in brands" :key="brand.id" :value="brand.id">
-                {{ brand.name }}
-              </option>
+            <select v-model="filters.brandId" class="form-control">
+              <option value="">-- Tất cả Thương Hiệu --</option>
+              <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
             </select>
           </div>
           <div class="col-md-2">
-            <button class="btn btn-light border w-100" @click="filters.keyword = ''; filters.categoryId = ''; filters.brandId = ''; filters.status = ''; fetchProducts()">
-              <i class="fa fa-refresh mr-1"></i> Làm mới
-            </button>
+            <select v-model="filters.status" class="form-control">
+              <option value="">-- Trạng Thái --</option>
+              <option value="ACTIVE">HOẠT ĐỘNG</option>
+              <option value="INACTIVE">VÔ HIỆU</option>
+            </select>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bảng Sản Phẩm (Table) -->
-    <div class="card border-0 shadow-sm">
+    <!-- Bảng Danh Sách Sản Phẩm -->
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
       <div class="card-body p-0">
-        <LoadingSpinner v-if="isLoading" text="Đang tải danh sách sản phẩm..." />
+        <div v-if="isLoading" class="py-5 text-center">
+          <LoadingSpinner text="Đang tải dữ liệu sản phẩm..." />
+        </div>
 
         <div v-else class="table-responsive">
-          <table class="table table-hover align-middle mb-0 text-center">
-            <thead class="bg-light text-secondary">
+          <table class="table table-hover align-middle m-0 text-center">
+            <thead class="table-dark text-uppercase small">
               <tr>
                 <th style="width: 60px;">ID</th>
-                <th style="width: 80px;">Ảnh</th>
+                <th style="width: 80px;">Hình Ảnh</th>
                 <th class="text-left">Tên Sản Phẩm</th>
                 <th>Chuyên Mục</th>
                 <th>Thương Hiệu</th>
                 <th>Giá Bán</th>
                 <th>Tồn Kho</th>
+                <th>Kích Cỡ</th>
+                <th>Màu Sắc</th>
                 <th>Đánh Giá</th>
-                <th>Yêu Thích</th>
                 <th>Trạng Thái</th>
-                <th style="width: 130px;">Thao Tác</th>
+                <th style="width: 120px;">Thao Tác</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="product in products" :key="product.id">
                 <td class="font-weight-bold text-muted">#{{ product.id }}</td>
-                <!-- Ảnh tượng trưng sản phẩm -->
                 <td>
                   <div class="product-thumb-box">
-                    <img
-                      v-if="product.thumbnailUrl"
-                      :src="product.thumbnailUrl"
-                      :alt="product.name"
-                      class="product-thumb-img"
-                    />
-                    <div v-else class="product-thumb-placeholder">
-                      <i class="fa fa-shopping-bag"></i>
-                    </div>
+                    <img v-if="product.thumbnailUrl" :src="product.thumbnailUrl" :alt="product.name" class="product-thumb-img" />
+                    <div v-else class="product-thumb-placeholder"><i class="fa fa-shopping-bag"></i></div>
                   </div>
                 </td>
                 <td class="text-left">
                   <span class="font-weight-bold text-dark d-block">{{ product.name }}</span>
                   <code class="small text-muted">{{ product.slug }}</code>
                 </td>
-                <td>
-                  <span class="badge bg-light text-dark border">{{ product.categoryName || '-' }}</span>
-                </td>
-                <td>
-                  <span class="badge bg-light text-dark border">{{ product.brandName || '-' }}</span>
-                </td>
+                <td><span class="badge bg-light text-dark border">{{ product.categoryName || '-' }}</span></td>
+                <td><span class="badge bg-light text-dark border">{{ product.brandName || '-' }}</span></td>
                 <td>
                   <span class="font-weight-bold text-danger d-block">{{ formatPrice(product.price) }}</span>
                   <small v-if="product.salePrice" class="text-muted text-decoration-line-through">{{ formatPrice(product.salePrice) }}</small>
                 </td>
                 <td>
-                  <span
-                    class="badge"
-                    :class="product.stockQuantity > 0 ? 'bg-info text-white' : 'bg-secondary text-white'"
-                  >
+                  <span class="badge" :class="product.stockQuantity > 0 ? 'bg-info text-white' : 'bg-secondary text-white'">
                     {{ product.stockQuantity }} cái
                   </span>
                 </td>
-                <!-- Đánh giá Rating -->
+                <!-- Kích cỡ -->
                 <td>
-                  <div class="small text-warning font-weight-bold">
-                    <i class="fa fa-star"></i> {{ product.averageRating || '5.0' }}
+                  <div class="d-flex flex-wrap gap-1 justify-content-center">
+                    <span v-for="sz in (product.availableSizes || 'S, M, L, XL').split(',')" :key="sz" class="badge bg-dark text-white border">
+                      {{ sz.trim() }}
+                    </span>
                   </div>
                 </td>
-                <!-- Yêu thích Favorite Count -->
+                <!-- Màu sắc -->
                 <td>
-                  <div class="small text-danger font-weight-bold">
-                    <i class="fa fa-heart"></i> {{ product.favoriteCount || 0 }}
+                  <div class="d-flex flex-wrap gap-1 justify-content-center">
+                    <span v-for="cl in (product.availableColors || 'Đen, Trắng').split(',')" :key="cl" class="badge bg-secondary text-white">
+                      {{ cl.trim() }}
+                    </span>
                   </div>
                 </td>
                 <td>
-                  <span
-                    class="badge"
-                    :class="product.status === 'ACTIVE' ? 'bg-success text-white' : 'bg-danger text-white'"
-                  >
+                  <div class="small text-warning font-weight-bold"><i class="fa fa-star"></i> {{ product.averageRating || '5.0' }}</div>
+                </td>
+                <td>
+                  <span class="badge" :class="product.status === 'ACTIVE' ? 'bg-success text-white' : 'bg-danger text-white'">
                     {{ product.status === 'ACTIVE' ? 'HOẠT ĐỘNG' : 'VÔ HIỆU' }}
                   </span>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline-info mr-2" @click="openEditModal(product)" title="Sửa">
+                  <button class="btn btn-sm btn-outline-info mr-1" @click="openEditModal(product)" title="Sửa">
                     <i class="fa fa-pencil"></i>
                   </button>
                   <button class="btn btn-sm btn-outline-danger" @click="handleDelete(product)" title="Xóa">
@@ -452,9 +478,8 @@ onMounted(() => {
                 </td>
               </tr>
               <tr v-if="products.length === 0">
-                <td colspan="11" class="text-center py-5 text-muted">
-                  <i class="fa fa-shopping-bag fa-2x mb-2 d-block"></i>
-                  Không tìm thấy sản phẩm nào phù hợp.
+                <td colspan="12" class="text-center py-5 text-muted">
+                  <i class="fa fa-shopping-bag fa-2x mb-2 d-block"></i> Không tìm thấy sản phẩm nào.
                 </td>
               </tr>
             </tbody>
@@ -462,19 +487,14 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Footer Phân Trang -->
+      <!-- Phân Trang -->
       <div v-if="pagination.totalPages > 1" class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
         <small class="text-muted">Trang {{ filters.page + 1 }} / {{ pagination.totalPages }} (Tổng {{ pagination.totalElements }} sản phẩm)</small>
         <ul class="pagination pagination-sm m-0">
           <li class="page-item" :class="{ disabled: filters.page === 0 }">
             <button class="page-link" @click="changePage(filters.page - 1)">Trước</button>
           </li>
-          <li
-            v-for="p in pagination.totalPages"
-            :key="p"
-            class="page-item"
-            :class="{ active: filters.page === p - 1 }"
-          >
+          <li v-for="p in pagination.totalPages" :key="p" class="page-item" :class="{ active: filters.page === p - 1 }">
             <button class="page-link" @click="changePage(p - 1)">{{ p }}</button>
           </li>
           <li class="page-item" :class="{ disabled: filters.page === pagination.totalPages - 1 }">
@@ -484,296 +504,212 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Modal Thêm / Chỉnh Sửa Sản Phẩm -->
-    <div v-if="isModalOpen" class="modal-overlay" @click.self="isModalOpen = false">
-      <div class="modal-box">
-        <div class="modal-header-custom">
-          <h5 class="m-0 font-weight-bold">
-            <i class="fa mr-2" :class="isEditing ? 'fa-pencil' : 'fa-plus-circle'"></i>
-            {{ isEditing ? 'Chỉnh Sửa Sản Phẩm' : 'Thêm Sản Phẩm Mới' }}
-          </h5>
-          <button class="close-btn" @click="isModalOpen = false">&times;</button>
-        </div>
+    <!-- MODAL THÊM / SỬA SẢN PHẨM -->
+    <div v-if="isModalOpen" class="custom-modal-backdrop">
+      <div class="custom-modal-dialog">
+        <div class="custom-modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title font-weight-bold">
+              <i class="fa" :class="isEditing ? 'fa-pencil' : 'fa-plus-circle'"></i>
+              {{ isEditing ? 'Chỉnh Sửa Sản Phẩm' : 'Thêm Sản Phẩm Mới' }}
+            </h5>
+            <button type="button" class="btn-close btn-close-white" @click="isModalOpen = false"></button>
+          </div>
 
-        <form @submit.prevent="handleSubmit">
-          <div class="modal-body-custom">
+          <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
+            <form @submit.prevent="handleSubmit">
+              <div class="row g-3">
+                <!-- Tên Sản Phẩm -->
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">Tên Sản Phẩm <span class="text-danger">*</span></label>
+                  <input v-model="form.name" type="text" class="form-control" placeholder="Ví dụ: Áo Sơ Mi Nam Oxford" @input="onNameChange" />
+                  <small v-if="formErrors.name" class="text-danger">{{ formErrors.name }}</small>
+                </div>
 
-            <!-- Tên sản phẩm & Slug -->
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label font-weight-bold">Tên Sản Phẩm <span class="text-danger">*</span></label>
-                <input
-                  v-model="form.name"
-                  type="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': formErrors.name }"
-                  placeholder="Ví dụ: Áo Khoác Biker Piqué Nam"
-                  @input="onNameChange"
-                />
-                <div v-if="formErrors.name" class="invalid-feedback">{{ formErrors.name }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label font-weight-bold">Slug Đường Dẫn</label>
-                <input
-                  v-model="form.slug"
-                  type="text"
-                  class="form-control"
-                  placeholder="ao-khoac-biker-pique-nam"
-                />
-              </div>
-            </div>
+                <!-- Slug -->
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">Slug URL</label>
+                  <input v-model="form.slug" type="text" class="form-control bg-light" placeholder="ao-so-mi-nam-oxford" />
+                </div>
 
-            <!-- Chuyên mục & Thương hiệu -->
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label font-weight-bold">Chuyên Mục Liên Kết</label>
-                <select v-model="form.categoryId" class="form-control">
-                  <option value="">-- Chọn Chuyên Mục --</option>
-                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                    {{ cat.name }}
-                  </option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label font-weight-bold">Thương Hiệu Liên Kết</label>
-                <select v-model="form.brandId" class="form-control">
-                  <option value="">-- Chọn Thương Hiệu --</option>
-                  <option v-for="brand in brands" :key="brand.id" :value="brand.id">
-                    {{ brand.name }}
-                  </option>
-                </select>
-              </div>
-            </div>
+                <!-- Chuyên Mục -->
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">Chuyên Mục (Category)</label>
+                  <select v-model="form.categoryId" class="form-control">
+                    <option value="">-- Chọn Chuyên Mục --</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                  </select>
+                </div>
 
-            <!-- Giá bán, Giá khuyến mãi & Tồn kho -->
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <label class="form-label font-weight-bold">Giá Bán (VND) <span class="text-danger">*</span></label>
-                <input
-                  v-model="form.price"
-                  type="number"
-                  class="form-control"
-                  :class="{ 'is-invalid': formErrors.price }"
-                  placeholder="1550000"
-                  min="0"
-                />
-                <div v-if="formErrors.price" class="invalid-feedback">{{ formErrors.price }}</div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label font-weight-bold">Giá Khuyến Mãi (VND)</label>
-                <input
-                  v-model="form.salePrice"
-                  type="number"
-                  class="form-control"
-                  placeholder="1250000"
-                  min="0"
-                />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label font-weight-bold">Tồn Kho (Cái) <span class="text-danger">*</span></label>
-                <input
-                  v-model="form.stockQuantity"
-                  type="number"
-                  class="form-control"
-                  placeholder="50"
-                  min="0"
-                />
-              </div>
-            </div>
+                <!-- Thương Hiệu -->
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">Thương Hiệu (Brand)</label>
+                  <select v-model="form.brandId" class="form-control">
+                    <option value="">-- Chọn Thương Hiệu --</option>
+                    <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
+                  </select>
+                </div>
 
-            <!-- Upload Ảnh đại diện sản phẩm -->
-            <div class="form-group mb-3">
-              <label class="form-label font-weight-bold">Ảnh Đại Diện Sản Phẩm (Upload Cloudinary)</label>
-              <div class="d-flex align-items-center gap-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  class="form-control-file"
-                  @change="handleImageSelect"
-                />
-                <div v-if="imagePreviewUrl" class="img-preview-box">
-                  <img :src="imagePreviewUrl" alt="Preview Thumbnail" class="img-preview" />
+                <!-- Giá Bán Niêm Yết -->
+                <div class="col-md-4">
+                  <label class="form-label font-weight-bold">Giá Bán Niêm Yết (VND) <span class="text-danger">*</span></label>
+                  <input v-model.number="form.price" type="number" class="form-control" placeholder="500000" min="0" />
+                  <small v-if="formErrors.price" class="text-danger">{{ formErrors.price }}</small>
+                </div>
+
+                <!-- Giá Khuyến Mãi (Sale Price) -->
+                <div class="col-md-4">
+                  <label class="form-label font-weight-bold">Giá Khuyến Mãi (Khuyết)</label>
+                  <input v-model.number="form.salePrice" type="number" class="form-control" placeholder="Để trống nếu không giảm giá" min="0" />
+                </div>
+
+                <!-- Số Lượng Tồn Kho -->
+                <div class="col-md-4">
+                  <label class="form-label font-weight-bold">Số Lượng Tồn Kho <span class="text-danger">*</span></label>
+                  <input v-model.number="form.stockQuantity" type="number" class="form-control" placeholder="10" min="0" />
+                </div>
+
+                <!-- NÂNG CẤP: KÍCH CỠ SẢN PHẨM (SIZES) -->
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">
+                    <i class="fa fa-ruler-combined text-primary mr-1"></i> Các Kích Cỡ Sản Phẩm (Sizes)
+                  </label>
+                  <input v-model="form.availableSizes" type="text" class="form-control mb-2" placeholder="Ví dụ: S, M, L, XL, XXL" />
+                  <div class="d-flex flex-wrap gap-1">
+                    <button
+                      v-for="sz in presetSizes"
+                      :key="sz"
+                      type="button"
+                      class="btn btn-xs btn-outline-dark"
+                      :class="{ active: form.availableSizes && form.availableSizes.includes(sz) }"
+                      @click="togglePresetSize(sz)"
+                    >
+                      + {{ sz }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- NÂNG CẤP: MÀU SẮC SẢN PHẨM (COLORS) -->
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">
+                    <i class="fa fa-paint-brush text-warning mr-1"></i> Các Màu Sắc Sản Phẩm (Colors)
+                  </label>
+                  <input v-model="form.availableColors" type="text" class="form-control mb-2" placeholder="Ví dụ: Đen, Trắng, Xanh Navy, Xám" />
+                  <div class="d-flex flex-wrap gap-1">
+                    <button
+                      v-for="cl in presetColors"
+                      :key="cl"
+                      type="button"
+                      class="btn btn-xs btn-outline-secondary"
+                      :class="{ active: form.availableColors && form.availableColors.includes(cl) }"
+                      @click="togglePresetColor(cl)"
+                    >
+                      + {{ cl }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Chọn Tệp Ảnh Sản Phẩm -->
+                <div class="col-md-12">
+                  <label class="form-label font-weight-bold">Ảnh Tượng Trưng Sản Phẩm (Cloudinary)</label>
+                  <input type="file" accept="image/*" class="form-control mb-2" @change="handleImageSelect" />
+                  <div v-if="imagePreviewUrl" class="mt-2 text-center p-2 border rounded bg-light">
+                    <img :src="imagePreviewUrl" alt="Preview" style="max-height: 120px; object-fit: contain;" />
+                  </div>
+                </div>
+
+                <!-- Mô Tả Ngắn -->
+                <div class="col-md-12">
+                  <label class="form-label font-weight-bold">Mô Tả Ngắn</label>
+                  <input v-model="form.shortDescription" type="text" class="form-control" placeholder="Ví dụ: Áo thun nam chất liệu 100% cotton thoáng mát" />
+                </div>
+
+                <!-- Mô Tả Chi Tiết -->
+                <div class="col-md-12">
+                  <label class="form-label font-weight-bold">Mô Tả Chi Tiết</label>
+                  <textarea v-model="form.description" class="form-control" rows="3" placeholder="Chi tiết chất liệu, hướng dẫn giặt là..."></textarea>
+                </div>
+
+                <!-- Trạng Thái -->
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">Trạng Thái</label>
+                  <select v-model="form.status" class="form-control">
+                    <option value="ACTIVE">HOẠT ĐỘNG (ACTIVE)</option>
+                    <option value="INACTIVE">VÔ HIỆU (INACTIVE)</option>
+                  </select>
+                </div>
+
+                <!-- Sản phẩm Nổi bật -->
+                <div class="col-md-6 d-flex align-items-center mt-4">
+                  <div class="form-check">
+                    <input id="isFeatured" v-model="form.isFeatured" type="checkbox" class="form-check-input" />
+                    <label for="isFeatured" class="form-check-label font-weight-bold cursor-pointer">Sản Phẩm Nổi Bật (Featured Product)</label>
+                  </div>
                 </div>
               </div>
-              <small class="text-muted">Ảnh sẽ được upload tự động lên thư mục Cloudinary: <code>FashionShop2/products</code></small>
-            </div>
 
-            <!-- Đánh giá & Số lượt yêu thích & Trạng thái -->
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <label class="form-label font-weight-bold">Đánh Giá (Rating 1.0 - 5.0)</label>
-                <input
-                  v-model="form.averageRating"
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="5"
-                  class="form-control"
-                />
+              <!-- Action Buttons -->
+              <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                <button type="button" class="btn btn-secondary" @click="isModalOpen = false">Hủy Bỏ</button>
+                <button type="submit" class="btn btn-danger font-weight-bold" :disabled="isSubmitting">
+                  <i class="fa fa-save mr-1"></i> {{ isSubmitting ? 'Đang Lưu...' : 'Lưu Sản Phẩm' }}
+                </button>
               </div>
-              <div class="col-md-4">
-                <label class="form-label font-weight-bold">Lượt Yêu Thích</label>
-                <input
-                  v-model="form.favoriteCount"
-                  type="number"
-                  min="0"
-                  class="form-control"
-                />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label font-weight-bold">Trạng Thái</label>
-                <select v-model="form.status" class="form-control">
-                  <option value="ACTIVE">HOẠT ĐỘNG (ACTIVE)</option>
-                  <option value="INACTIVE">VÔ HIỆU (INACTIVE)</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Mô tả ngắn -->
-            <div class="form-group mb-3">
-              <label class="form-label font-weight-bold">Mô Tả Ngắn</label>
-              <input
-                v-model="form.shortDescription"
-                type="text"
-                class="form-control"
-                placeholder="Ví dụ: Áo khoác da chất liệu piqué nam tính cao cấp"
-              />
-            </div>
-
-            <!-- Mô tả chi tiết -->
-            <div class="form-group mb-3">
-              <label class="form-label font-weight-bold">Mô Tả Chi Tiết Sản Phẩm</label>
-              <textarea
-                v-model="form.description"
-                rows="4"
-                class="form-control"
-                placeholder="Nhập thông số kỹ thuật, chất liệu vải, hướng dẫn giặt ủi và chi tiết sản phẩm..."
-              ></textarea>
-            </div>
-
+            </form>
           </div>
-
-          <div class="modal-footer-custom">
-            <button type="button" class="btn btn-secondary mr-2" @click="isModalOpen = false">Hủy Bỏ</button>
-            <button type="submit" class="btn btn-primary d-flex align-items-center gap-2" :disabled="isSubmitting">
-              <span v-if="isSubmitting" class="spinner-border spinner-border-sm"></span>
-              <span>{{ isSubmitting ? 'ĐANG LƯU...' : 'LƯU SẢN PHẨM' }}</span>
-            </button>
-          </div>
-        </form>
-
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-/* Product thumbnail style */
 .product-thumb-box {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
   border-radius: 6px;
   overflow: hidden;
-  margin: 0 auto;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  border: 1px solid #dee2e6;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #f8f9fa;
 }
-
 .product-thumb-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
-.product-thumb-placeholder {
-  width: 100%;
-  height: 100%;
-  background: #f1f5f9;
-  color: #94a3b8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-
-/* Modal Overlay & Box */
-.modal-overlay {
+.custom-modal-backdrop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(3px);
-  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  z-index: 1050;
 }
-
-.modal-box {
-  background: #ffffff;
-  border-radius: 12px;
+.custom-modal-dialog {
   width: 100%;
-  max-width: 720px;
-  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-  overflow: hidden;
+  max-width: 800px;
+  padding: 15px;
 }
-
-.modal-header-custom {
-  padding: 16px 24px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.modal-body-custom {
-  padding: 24px;
-  max-height: 75vh;
-  overflow-y: auto;
-}
-
-.modal-footer-custom {
-  padding: 16px 24px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #64748b;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.close-btn:hover {
-  color: #0f172a;
-}
-
-.img-preview-box {
-  width: 60px;
-  height: 60px;
+.custom-modal-content {
+  background: #fff;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
-
-.img-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.cursor-pointer {
+  cursor: pointer;
+}
+.btn-xs {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
 }
 </style>

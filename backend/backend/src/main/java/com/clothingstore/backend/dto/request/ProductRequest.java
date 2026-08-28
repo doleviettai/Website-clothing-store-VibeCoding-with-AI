@@ -36,6 +36,10 @@ public class ProductRequest {
     @Min(value = 0, message = "Tồn kho phải lớn hơn hoặc bằng 0")
     private Integer stockQuantity = 0;
 
+    private String availableSizes;
+
+    private String availableColors;
+
     private String thumbnailUrl;
 
     private String shortDescription;

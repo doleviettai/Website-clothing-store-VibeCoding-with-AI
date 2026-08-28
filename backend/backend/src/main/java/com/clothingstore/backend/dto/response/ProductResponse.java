@@ -28,6 +28,8 @@ public class ProductResponse {
     private BigDecimal price;
     private BigDecimal salePrice;
     private Integer stockQuantity;
+    private String availableSizes;
+    private String availableColors;
     private String thumbnailUrl;
     private String shortDescription;
     private String description;

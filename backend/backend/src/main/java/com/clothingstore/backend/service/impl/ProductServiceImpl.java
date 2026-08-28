@@ -189,6 +189,8 @@ public class ProductServiceImpl implements ProductService {
                 .price(request.getPrice())
                 .salePrice(request.getSalePrice())
                 .stockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0)
+                .availableSizes(request.getAvailableSizes())
+                .availableColors(request.getAvailableColors())
                 .thumbnailUrl(uploadedThumbnailUrl)
                 .shortDescription(request.getShortDescription())
                 .description(request.getDescription())
@@ -242,6 +244,8 @@ public class ProductServiceImpl implements ProductService {
         product.setPrice(request.getPrice());
         product.setSalePrice(request.getSalePrice());
         if (request.getStockQuantity() != null) product.setStockQuantity(request.getStockQuantity());
+        product.setAvailableSizes(request.getAvailableSizes());
+        product.setAvailableColors(request.getAvailableColors());
         product.setShortDescription(request.getShortDescription());
         product.setDescription(request.getDescription());
         if (request.getStatus() != null) product.setStatus(request.getStatus());
@@ -263,7 +267,7 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus("INACTIVE");
         productRepository.save(product);
 
-        return ApiResponse.success("Xóa sản phẩm thành công");
+        return ApiResponse.success("Xóa sản phẩm thành công", null);
     }
 
     // ================= Private helpers =================
@@ -280,6 +284,8 @@ public class ProductServiceImpl implements ProductService {
                 .price(p.getPrice())
                 .salePrice(p.getSalePrice())
                 .stockQuantity(p.getStockQuantity())
+                .availableSizes(p.getAvailableSizes())
+                .availableColors(p.getAvailableColors())
                 .thumbnailUrl(p.getThumbnailUrl())
                 .shortDescription(p.getShortDescription())
                 .description(p.getDescription())

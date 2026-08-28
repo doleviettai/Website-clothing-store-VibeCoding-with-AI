@@ -47,6 +47,12 @@ public class Product {
     @Builder.Default
     private Integer stockQuantity = 0;
 
+    @Column(name = "available_sizes", length = 255)
+    private String availableSizes;
+
+    @Column(name = "available_colors", length = 255)
+    private String availableColors;
+
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
 
