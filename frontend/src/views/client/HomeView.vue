@@ -689,4 +689,10 @@ onUnmounted(() => {
   background: #e53637;
   color: #ffffff;
 }
+
+.product__item:hover .product__item__text h6,
+.product__item__text h6 {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
 </style>
