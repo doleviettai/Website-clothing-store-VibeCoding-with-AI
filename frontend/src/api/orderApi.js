@@ -1,5 +1,22 @@
 import axiosInstance from './axiosInstance'
 
+// Client Order APIs
+export const createOrder = (data) => {
+  return axiosInstance.post('/orders', data)
+}
+
+export const getUserOrders = () => {
+  return axiosInstance.get('/orders')
+}
+
+export const getUserOrderDetail = (id) => {
+  return axiosInstance.get(`/orders/${id}`)
+}
+
+export const cancelUserOrder = (id) => {
+  return axiosInstance.patch(`/orders/${id}/cancel`)
+}
+
 // Admin Order APIs
 export const getAdminOrders = (params) => {
   return axiosInstance.get('/admin/orders', { params })
