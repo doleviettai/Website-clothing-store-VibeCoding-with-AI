@@ -43,7 +43,27 @@ cloudinary:
 
 # ===================== CORS =====================
 cors:
-  allowed-origins: "http://localhost:5173"
+  allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:5173}"
+
+# ===================== ZALOPAY =====================
+zalopay:
+  app-id: 2553
+  key1: "SdngBKC0YTaIhhvStvFrHasRwOxWZImw"
+  key2: "trL0aYVssSonhBriefoAfAz0n2WnAohq"
+  create-order-url: "https://sb-openapi.zalopay.vn/v2/create"
+  query-order-url: "https://sb-openapi.zalopay.vn/v2/query"
+  callback-url: "http://localhost:8080/api/v1/payments/zalopay/callback"
+  redirect-url: "http://localhost:5173/payment-result"
+
+# ===================== MOMO =====================
+momo:
+  partner-code: "MOMO"
+  access-key: "F8BBA84260B7E544"
+  secret-key: "K951B6E68B129F1E801545881D85703F"
+  create-order-url: "https://test-payment.momo.vn/v2/gateway/api/create"
+  query-order-url: "https://test-payment.momo.vn/v2/gateway/api/query"
+  ipn-url: "http://localhost:8080/api/v1/payments/momo/ipn"
+  redirect-url: "http://localhost:5173/payment-result"
 
 server:
   port: 8080

@@ -83,6 +83,21 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: 'payment-result',
+          name: 'payment-result',
+          component: () => import('@/views/client/PaymentResultView.vue'),
+        },
+        {
+          path: 'zalopay-pay',
+          name: 'zalopay-mock-gateway',
+          component: () => import('@/views/client/ZaloPayMockGatewayView.vue'),
+        },
+        {
+          path: 'momo-pay',
+          name: 'momo-mock-gateway',
+          component: () => import('@/views/client/MoMoMockGatewayView.vue'),
+        },
+        {
           path: 'profile',
           name: 'profile',
           component: () => import('@/views/client/ProfileView.vue'),

@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import * as cartApi from '@/api/cartApi'
 import * as orderApi from '@/api/orderApi'
+import * as zalopayApi from '@/api/zalopayApi'
+import * as momoApi from '@/api/momoApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const router = useRouter()
@@ -81,6 +83,7 @@ const handlePlaceOrder = async () => {
   errorMessage.value = ''
 
   try {
+    // 1. Tạo Đơn Hàng trong Database
     const res = await orderApi.createOrder({
       customerName: form.value.customerName.trim(),
       phone: form.value.phone.trim(),
@@ -94,14 +97,42 @@ const handlePlaceOrder = async () => {
     })
 
     const createdOrder = res.data?.data
-    successMessage.value = `🎉 Đặt hàng thành công! Mã đơn: #${createdOrder?.orderCode}`
 
-    setTimeout(() => {
-      router.push('/orders')
-    }, 1500)
+    // 2. Phân nhánh Thanh Toán MoMo vs ZaloPay vs COD
+    if (form.value.paymentMethod === 'MOMO') {
+      const momoRes = await momoApi.createMoMoPayment(createdOrder.id)
+      const momoData = momoRes.data?.data
+
+      if (momoData && momoData.payUrl) {
+        successMessage.value = 'Đang chuyển sang Cổng Thanh Toán Ví MoMo Sandbox...'
+        setTimeout(() => {
+          window.location.href = momoData.payUrl
+        }, 800)
+      } else {
+        errorMessage.value = 'Không thể khởi tạo cổng MoMo. Vui lòng thử lại.'
+        isSubmitting.value = false
+      }
+    } else if (form.value.paymentMethod === 'ZALOPAY') {
+      const zaloRes = await zalopayApi.createZaloPayPayment(createdOrder.id)
+      const zaloData = zaloRes.data?.data
+
+      if (zaloData && zaloData.orderUrl) {
+        successMessage.value = 'Đang chuyển sang Cổng Thanh Toán Ví ZaloPay Sandbox...'
+        setTimeout(() => {
+          window.location.href = zaloData.orderUrl
+        }, 800)
+      } else {
+        errorMessage.value = 'Không thể khởi tạo cổng ZaloPay. Vui lòng thử lại.'
+        isSubmitting.value = false
+      }
+    } else {
+      successMessage.value = `🎉 Đặt hàng thành công! Mã đơn: #${createdOrder?.orderCode}`
+      setTimeout(() => {
+        router.push('/orders')
+      }, 1500)
+    }
   } catch (err) {
     errorMessage.value = err.response?.data?.message || 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.'
-  } finally {
     isSubmitting.value = false
   }
 }
@@ -328,20 +359,36 @@ onMounted(() => {
               <small class="d-block text-muted mt-1">Bạn sẽ thanh toán tiền mặt trực tiếp cho nhân viên giao hàng khi nhận sản phẩm.</small>
             </div>
 
-            <!-- Option 2: Online Payment VNPAY -->
-            <div class="form-check p-3 border rounded bg-white mb-4 opacity-75">
+            <!-- Option 2: Online Payment ZaloPay -->
+            <div class="form-check p-3 border rounded bg-light mb-2 cursor-pointer">
               <input
                 class="form-check-input ms-0 mt-1 mr-2"
                 type="radio"
                 name="paymentMethod"
-                id="pmVnpay"
-                value="VNPAY"
+                id="pmZalopay"
+                value="ZALOPAY"
                 v-model="form.paymentMethod"
-                disabled
               />
-              <label class="form-check-label font-weight-bold text-muted" for="pmVnpay">
-                <i class="fa fa-credit-card text-primary mr-1"></i> VNPAY / Ví Điện Tử (Sắp hỗ trợ)
+              <label class="form-check-label font-weight-bold text-dark cursor-pointer" for="pmZalopay">
+                <i class="fa fa-credit-card text-primary mr-1"></i> Thanh toán Ví Điện Tử ZaloPay (Sandbox)
               </label>
+              <small class="d-block text-muted mt-1">Thanh toán qua ZaloPay QR / Ví ZaloPay thử nghiệm.</small>
+            </div>
+
+            <!-- Option 3: Online Payment MoMo -->
+            <div class="form-check p-3 border rounded bg-light mb-4 cursor-pointer">
+              <input
+                class="form-check-input ms-0 mt-1 mr-2"
+                type="radio"
+                name="paymentMethod"
+                id="pmMomo"
+                value="MOMO"
+                v-model="form.paymentMethod"
+              />
+              <label class="form-check-label font-weight-bold text-dark cursor-pointer" for="pmMomo">
+                <i class="fa fa-mobile text-danger mr-1" style="color: #a50064 !important;"></i> Thanh toán Ví Điện Tử MoMo (Sandbox)
+              </label>
+              <small class="d-block text-muted mt-1">Thanh toán qua MoMo QR / Ví MoMo thử nghiệm.</small>
             </div>
 
             <!-- Nút Bấm Đặt Hàng -->
