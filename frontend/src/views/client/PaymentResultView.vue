@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as zalopayApi from '@/api/zalopayApi'
 import * as momoApi from '@/api/momoApi'
+import * as vnpayApi from '@/api/vnpayApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const route = useRoute()
@@ -28,7 +29,9 @@ const verifyPaymentResult = async () => {
   errorMessage.value = ''
   try {
     let res
-    if (gatewayParam.value === 'MOMO') {
+    if (gatewayParam.value === 'VNPAY') {
+      res = await vnpayApi.getVNPayStatus(orderId.value)
+    } else if (gatewayParam.value === 'MOMO') {
       res = await momoApi.getMoMoStatus(orderId.value)
     } else {
       res = await zalopayApi.getZaloPayStatus(orderId.value)
@@ -115,10 +118,14 @@ onUnmounted(() => {
                   <span class="text-muted">Phương Thức Thanh Toán:</span>
                   <span
                     class="badge font-weight-bold"
-                    :class="paymentInfo.paymentGateway === 'MOMO' ? 'text-white' : 'bg-primary text-white'"
-                    :style="paymentInfo.paymentGateway === 'MOMO' ? 'background-color: #a50064;' : ''"
+                    :class="{
+                      'text-white': true,
+                      'bg-primary': paymentInfo.paymentGateway === 'ZALOPAY',
+                      'bg-danger': paymentInfo.paymentGateway === 'VNPAY'
+                    }"
+                    :style="paymentInfo.paymentGateway === 'MOMO' ? 'background-color: #a50064;' : (paymentInfo.paymentGateway === 'VNPAY' ? 'background-color: #005baa;' : '')"
                   >
-                    VÍ {{ paymentInfo.paymentGateway || 'ONLINE' }}
+                    {{ paymentInfo.paymentGateway || 'ONLINE' }}
                   </span>
                 </div>
                 <div class="d-flex justify-content-between mb-2">

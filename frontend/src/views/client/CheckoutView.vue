@@ -6,6 +6,7 @@ import * as cartApi from '@/api/cartApi'
 import * as orderApi from '@/api/orderApi'
 import * as zalopayApi from '@/api/zalopayApi'
 import * as momoApi from '@/api/momoApi'
+import * as vnpayApi from '@/api/vnpayApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const router = useRouter()
@@ -98,8 +99,21 @@ const handlePlaceOrder = async () => {
 
     const createdOrder = res.data?.data
 
-    // 2. Phân nhánh Thanh Toán MoMo vs ZaloPay vs COD
-    if (form.value.paymentMethod === 'MOMO') {
+    // 2. Phân nhánh Thanh Toán VNPAY vs MoMo vs ZaloPay vs COD
+    if (form.value.paymentMethod === 'VNPAY') {
+      const vnpayRes = await vnpayApi.createVNPayPayment(createdOrder.id)
+      const vnpayData = vnpayRes.data?.data
+
+      if (vnpayData && vnpayData.paymentUrl) {
+        successMessage.value = 'Đang chuyển sang Cổng Thanh Toán VNPAY Sandbox...'
+        setTimeout(() => {
+          window.location.href = vnpayData.paymentUrl
+        }, 800)
+      } else {
+        errorMessage.value = 'Không thể khởi tạo cổng VNPAY. Vui lòng thử lại.'
+        isSubmitting.value = false
+      }
+    } else if (form.value.paymentMethod === 'MOMO') {
       const momoRes = await momoApi.createMoMoPayment(createdOrder.id)
       const momoData = momoRes.data?.data
 
@@ -376,7 +390,7 @@ onMounted(() => {
             </div>
 
             <!-- Option 3: Online Payment MoMo -->
-            <div class="form-check p-3 border rounded bg-light mb-4 cursor-pointer">
+            <div class="form-check p-3 border rounded bg-light mb-2 cursor-pointer">
               <input
                 class="form-check-input ms-0 mt-1 mr-2"
                 type="radio"
@@ -389,6 +403,22 @@ onMounted(() => {
                 <i class="fa fa-mobile text-danger mr-1" style="color: #a50064 !important;"></i> Thanh toán Ví Điện Tử MoMo (Sandbox)
               </label>
               <small class="d-block text-muted mt-1">Thanh toán qua MoMo QR / Ví MoMo thử nghiệm.</small>
+            </div>
+
+            <!-- Option 4: Online Payment VNPAY -->
+            <div class="form-check p-3 border rounded bg-light mb-4 cursor-pointer">
+              <input
+                class="form-check-input ms-0 mt-1 mr-2"
+                type="radio"
+                name="paymentMethod"
+                id="pmVnpay"
+                value="VNPAY"
+                v-model="form.paymentMethod"
+              />
+              <label class="form-check-label font-weight-bold text-dark cursor-pointer" for="pmVnpay">
+                <i class="fa fa-credit-card mr-1" style="color: #005baa !important;"></i> Thanh toán Cổng VNPAY (Sandbox)
+              </label>
+              <small class="d-block text-muted mt-1">Thanh toán qua VNPAY-QR / Thẻ ATM Ngân Hàng NCB thử nghiệm.</small>
             </div>
 
             <!-- Nút Bấm Đặt Hàng -->

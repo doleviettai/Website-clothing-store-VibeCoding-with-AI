@@ -47,23 +47,30 @@ cors:
 
 # ===================== ZALOPAY =====================
 zalopay:
-  app-id: 2553
-  key1: "SdngBKC0YTaIhhvStvFrHasRwOxWZImw"
-  key2: "trL0aYVssSonhBriefoAfAz0n2WnAohq"
-  create-order-url: "https://sb-openapi.zalopay.vn/v2/create"
-  query-order-url: "https://sb-openapi.zalopay.vn/v2/query"
-  callback-url: "http://localhost:8080/api/v1/payments/zalopay/callback"
-  redirect-url: "http://localhost:5173/payment-result"
+  app-id: ${ZALOPAY_APP_ID:2553}
+  key1: "${ZALOPAY_KEY1:SdngBKC0YTaIhhvStvFrHasRwOxWZImw}"
+  key2: "${ZALOPAY_KEY2:trL0aYVssSonhBriefoAfAz0n2WnAohq}"
+  create-order-url: "${ZALOPAY_CREATE_ORDER_URL:https://sb-openapi.zalopay.vn/v2/create}"
+  query-order-url: "${ZALOPAY_QUERY_ORDER_URL:https://sb-openapi.zalopay.vn/v2/query}"
+  callback-url: "${ZALOPAY_CALLBACK_URL:http://localhost:8080/api/v1/payments/zalopay/callback}"
+  redirect-url: "${ZALOPAY_REDIRECT_URL:http://localhost:5173/payment-result}"
 
 # ===================== MOMO =====================
 momo:
-  partner-code: "MOMO"
-  access-key: "F8BBA84260B7E544"
-  secret-key: "K951B6E68B129F1E801545881D85703F"
-  create-order-url: "https://test-payment.momo.vn/v2/gateway/api/create"
-  query-order-url: "https://test-payment.momo.vn/v2/gateway/api/query"
-  ipn-url: "http://localhost:8080/api/v1/payments/momo/ipn"
-  redirect-url: "http://localhost:5173/payment-result"
+  partner-code: "${MOMO_PARTNER_CODE:MOMO}"
+  access-key: "${MOMO_ACCESS_KEY:F8BBA84260B7E544}"
+  secret-key: "${MOMO_SECRET_KEY:K951B6E68B129F1E801545881D85703F}"
+  create-order-url: "${MOMO_CREATE_ORDER_URL:https://test-payment.momo.vn/v2/gateway/api/create}"
+  query-order-url: "${MOMO_QUERY_ORDER_URL:https://test-payment.momo.vn/v2/gateway/api/query}"
+  ipn-url: "${MOMO_IPN_URL:http://localhost:8080/api/v1/payments/momo/ipn}"
+  redirect-url: "${MOMO_REDIRECT_URL:http://localhost:5173/payment-result}"
+
+# ===================== VNPAY =====================
+vnpay:
+  tmn-code: "${VNPAY_TMN_CODE:CGXZ24M1}"
+  hash-secret: "${VNPAY_HASH_SECRET:XTYUIOPQASDFGHJKL1234567890MNBVC}"
+  pay-url: "${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}"
+  return-url: "${VNPAY_RETURN_URL:http://localhost:5173/payment-result}"
 
 server:
   port: 8080

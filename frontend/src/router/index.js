@@ -98,6 +98,11 @@ const router = createRouter({
           component: () => import('@/views/client/MoMoMockGatewayView.vue'),
         },
         {
+          path: 'vnpay-pay',
+          name: 'vnpay-mock-gateway',
+          component: () => import('@/views/client/VNPayMockGatewayView.vue'),
+        },
+        {
           path: 'profile',
           name: 'profile',
           component: () => import('@/views/client/ProfileView.vue'),

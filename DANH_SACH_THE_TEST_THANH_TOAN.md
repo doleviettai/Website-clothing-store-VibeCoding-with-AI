@@ -46,7 +46,21 @@ Document tra cứu số thẻ test thử nghiệm dành cho **Tester / Developer
 
 ---
 
-## 📋 3. HƯỚNG DẪN CÁC BƯỚC TEST DÀNH CHO TESTER
+## 💙 3. DANH SÁCH THẺ TEST CỔNG VNPAY SANDBOX (NCB / NAPAS)
+
+**Ngân Hàng Khuyên Dùng**: Ngan hang NCB (`NCB`) / Vietcombank (`VCB`) / Napas  
+**Mã OTP Test mặc định**: **`123456`**
+
+| Kịch Bản Kiểm Thử | Số Thẻ Test (16 Số) | Tên Chủ Thẻ | Hạn Thẻ | Mã OTP Test | Phản Hồi Từ Hệ Thống VNPAY |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| ✅ **Thanh toán thành công** | `9704198526191432` | `NGUYEN VAN A` | `07/15` | **`123456`** | Mở OTP ➔ Nhập `123456` ➔ Chuyển đơn `PAID` |
+| 🔒 **Thẻ bị khóa** | `9704198526191433` | `NGUYEN VAN A` | `07/15` | N/A | Báo lỗi: *Thẻ của quý khách đã bị KHÓA.* |
+| 💸 **Tài khoản không đủ số dư** | `9704198526191434` | `NGUYEN VAN A` | `07/15` | N/A | Báo lỗi: *Tài khoản không đủ số dư để thanh toán.* |
+| ⚠️ **Vượt hạn mức trong ngày** | `9704198526191435` | `NGUYEN VAN A` | `07/15` | N/A | Báo lỗi: *Vượt quá hạn mức giao dịch trong ngày.* |
+
+---
+
+## 📋 4. HƯỚNG DẪN CÁC BƯỚC TEST DÀNH CHO TESTER
 
 ```text
 1. Khách hàng vào website -> Thêm sản phẩm vào giỏ hàng -> Chọn "Checkout" (/checkout).
